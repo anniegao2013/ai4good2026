@@ -113,13 +113,12 @@ export function ConceptCard({
 
           <button
             onClick={handleComplete}
-            disabled={completed}
             className={`
               mt-5 text-sm px-4 py-2 rounded-lg border transition-all
               ${popping ? 'pop' : ''}
               ${
                 completed
-                  ? 'border-faro-primary/30 text-faro-primary bg-faro-light cursor-default'
+                  ? 'border-faro-primary/30 text-faro-primary bg-faro-light hover:bg-white hover:border-faro-border hover:text-text-secondary'
                   : 'border-faro-border text-text-secondary hover:border-text-primary hover:text-text-primary'
               }
             `}

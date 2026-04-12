@@ -75,7 +75,7 @@ const URGENCY = [
   'Just exploring',
 ]
 
-const TOTAL = 6
+const TOTAL = 7
 
 //Country label helper
 const COUNTRY_LABEL_TO_CODE: Record<string, OnboardingCountry> = Object.fromEntries(
@@ -114,6 +114,7 @@ export default function OnboardingPage() {
 
   function handleFinish(urgency: string) {
     const final: FaroProfile = {
+      name:      profile.name ?? '',
       country:   profile.country ?? 'OTHER',
       timeInUS:  profile.timeInUS ?? '',
       status:    profile.status ?? '',
@@ -122,7 +123,7 @@ export default function OnboardingPage() {
       urgency,
     }
     localStorage.setItem('faro_profile', JSON.stringify(final))
-    router.push('/result')
+    router.push('/loading')
   }
 
   return (
@@ -131,7 +132,7 @@ export default function OnboardingPage() {
 
       {/* Nav */}
       <nav className="relative z-10 px-6 py-5 border-b border-faro-border flex items-center justify-between">
-        <span className="text-sm font-semibold tracking-widest uppercase text-text-primary">Faro</span>
+        <span className="text-sm font-semibold tracking-widest uppercase text-text-primary">Settle</span>
         {step > 1 && (
           <button
             onClick={back}
@@ -151,7 +152,35 @@ export default function OnboardingPage() {
       <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-10 pb-16">
         <div className="w-full max-w-xl mx-auto flex flex-col items-center">
 
+          {/* Q1: Name */}
           {step === 1 && (
+            <QuestionCard
+              question="What's your name?"
+              whyWeAsk="We'll use this to personalize your roadmap."
+            >
+              <input
+                type="text"
+                placeholder="Your first name"
+                value={profile.name ?? ''}
+                onChange={(e) => set('name', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (profile.name ?? '').trim()) advance()
+                }}
+                autoFocus
+                className="w-full border border-faro-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-text-primary"
+              />
+              <button
+                onClick={advance}
+                disabled={!(profile.name ?? '').trim()}
+                className="mt-3 w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+              >
+                Continue
+              </button>
+            </QuestionCard>
+          )}
+
+          {/* Q2: Country */}
+          {step === 2 && (
             <QuestionCard
               question="What country did you grow up in?"
               whyWeAsk="Each country has a distinct financial system. This loads the right comparison map for you."
@@ -170,7 +199,7 @@ export default function OnboardingPage() {
                     if (match) {
                       set('country', match)
                     } else if (!raw.trim()) {
-                      set('country', undefined as any)
+                      set('country', 'OTHER')
                     } else {
                       set('country', 'OTHER')
                     }
@@ -233,8 +262,8 @@ export default function OnboardingPage() {
             </QuestionCard>
           )}
 
-          {/* Q2: Time in US */}
-          {step === 2 && (
+          {/* Q3: Time in US */}
+          {step === 3 && (
             <QuestionCard
               question="How long have you been in the United States?"
               whyWeAsk="This sets which tasks are most urgent for your situation right now."
@@ -255,8 +284,8 @@ export default function OnboardingPage() {
             </QuestionCard>
           )}
 
-          {/* Q3: Immigration status */}
-          {step === 3 && (
+          {/* Q4: Immigration status */}
+          {step === 4 && (
             <QuestionCard
               question="What's your current immigration status?"
               whyWeAsk="Different statuses unlock different financial products. H-1B can open most accounts immediately. F-1 students have different tax rules."
@@ -277,8 +306,8 @@ export default function OnboardingPage() {
             </QuestionCard>
           )}
 
-          {/* Q4: SSN status */}
-          {step === 4 && (
+          {/* Q5: SSN status */}
+          {step === 5 && (
             <QuestionCard
               question="Do you have a Social Security Number (SSN) yet?"
               whyWeAsk="SSN is the key that unlocks most US financial products. If you don't have one, we'll show you alternatives that work right now."
@@ -299,8 +328,8 @@ export default function OnboardingPage() {
             </QuestionCard>
           )}
 
-          {/* Q5: Financial tools back home */}
-          {step === 5 && (
+          {/* Q6: Financial tools back home */}
+          {step === 6 && (
             <QuestionCard
               question="Back home, which of these did you use? (select all that apply)"
               whyWeAsk="Each one maps directly to a US equivalent. If you had a credit card back home, you already understand the concept — we just need to show you how scoring works differently here."
@@ -325,8 +354,8 @@ export default function OnboardingPage() {
             </QuestionCard>
           )}
 
-          {/* Q6: Urgent need */}
-          {step === 6 && (
+          {/* Q7: Urgent need */}
+          {step === 7 && (
             <QuestionCard
               question="What are you most worried about right now?"
               whyWeAsk="This re-orders your personal roadmap so the most urgent thing comes first."

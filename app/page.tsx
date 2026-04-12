@@ -10,7 +10,7 @@ export default function HomePage() {
 
       <div className="relative z-10 max-w-md w-full">
         {/* Wordmark */}
-        <p className="text-sm text-text-secondary mb-10 tracking-widest uppercase">Faro</p>
+        <p className="text-sm text-text-secondary mb-10 tracking-widest uppercase">Settle</p>
 
         {/* Headline */}
         <h1 className="text-5xl font-bold text-text-primary leading-tight mb-6">

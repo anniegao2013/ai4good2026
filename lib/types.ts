@@ -59,6 +59,7 @@ export interface FaroResult {
 
 /** Saved to localStorage as 'faro_profile' */
 export interface FaroProfile {
+  name: string
   country: OnboardingCountry
   timeInUS: string
   status: string

@@ -42,6 +42,18 @@ export default function ResultPage() {
     }
     if (done.size) setDoneBlocks(done)
 
+    // If the loading page already fetched a fresh result, use it directly
+    const isFresh = localStorage.getItem('faro_result_fresh') === '1'
+    if (isFresh) {
+      localStorage.removeItem('faro_result_fresh')
+      const cached = localStorage.getItem('faro_result')
+      if (cached) {
+        setResult(JSON.parse(cached))
+        setLoading(false)
+        return
+      }
+    }
+
     fetch('/api/parallel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -61,13 +73,24 @@ export default function ResultPage() {
   }, [])
 
   function markDone(i: number) {
-    if (doneBlocks.has(i)) return
-    setDoneBlocks((prev) => new Set(Array.from(prev).concat(i)))
-    // Save per-block progress
+    const wasChecked = doneBlocks.has(i)
+    setDoneBlocks((prev) => {
+      const next = new Set(Array.from(prev))
+      if (wasChecked) { next.delete(i) } else { next.add(i) }
+      return next
+    })
     const progress = JSON.parse(localStorage.getItem('faro_progress') ?? '{}')
-    localStorage.setItem('faro_progress', JSON.stringify({ ...progress, [`block${i}_completed`]: true }))
-    // Grow the skyline
-    addBuilding()
+    if (wasChecked) {
+      delete progress[`block${i}_completed`]
+      localStorage.setItem('faro_progress', JSON.stringify(progress))
+      const current = parseInt(localStorage.getItem('faro_buildings') ?? '0', 10)
+      const updated = Math.max(0, current - 1)
+      localStorage.setItem('faro_buildings', String(updated))
+      window.dispatchEvent(new CustomEvent('faro:skyline-update', { detail: { count: updated } }))
+    } else {
+      localStorage.setItem('faro_progress', JSON.stringify({ ...progress, [`block${i}_completed`]: true }))
+      addBuilding()
+    }
   }
 
   if (error === 'no_profile') {
@@ -180,7 +203,7 @@ export default function ResultPage() {
           <button
             onClick={() => {
               if (navigator.share) {
-                navigator.share({ title: 'Faro', url: window.location.origin })
+                navigator.share({ title: 'Settle', url: window.location.origin })
               } else {
                 navigator.clipboard.writeText(window.location.origin)
                 alert('Link copied!')
@@ -188,7 +211,7 @@ export default function ResultPage() {
             }}
             className="text-sm text-text-secondary border border-faro-border rounded-lg px-4 py-2 hover:border-text-primary transition-colors"
           >
-            Share Faro
+            Share Settle
           </button>
           <Link
             href="/onboarding"
@@ -206,7 +229,7 @@ export default function ResultPage() {
 function NavBar() {
   return (
     <nav className="relative z-10 px-6 py-5 flex items-center justify-between border-b border-faro-border">
-      <span className="text-sm font-semibold tracking-widest uppercase text-text-primary">Faro</span>
+      <span className="text-sm font-semibold tracking-widest uppercase text-text-primary">Settle</span>
       <Link href="/onboarding" className="text-xs text-text-secondary hover:text-text-primary transition-colors">
         Start over
       </Link>
