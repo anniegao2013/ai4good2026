@@ -151,44 +151,50 @@ export default function OnboardingPage() {
       <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-10 pb-16">
         <div className="w-full max-w-xl mx-auto flex flex-col items-center">
 
-          {/* Q1: Country */}
           {step === 1 && (
             <QuestionCard
               question="What country did you grow up in?"
               whyWeAsk="Each country has a distinct financial system. This loads the right comparison map for you."
             >
-              {/* 🌍 3D Globe Selector */}
-              <CountryGlobe
-                onSelect={(code) => {
-                  set('country', code as OnboardingCountry)
-                  setTimeout(advance, 200)
-                }}
-              />
-
-              {/* 🔎 Search (constrained to supported countries only) */}
-              <div className="mt-4">
+              {/* Search bar — above the globe, full width */}
+              <div className="w-full mb-4">
                 <input
                   type="text"
                   placeholder="Search your country..."
                   value={otherCountry}
                   onChange={(e) => {
-                    const val = e.target.value.trim().toLowerCase()
-                    setOtherCountry(e.target.value)
-
+                    const raw = e.target.value
+                    setOtherCountry(raw)
+                    const val = raw.trim().toLowerCase()
                     const match = COUNTRY_LABEL_TO_CODE[val]
-
                     if (match) {
                       set('country', match)
+                    } else if (!raw.trim()) {
+                      set('country', undefined as any)
                     } else {
                       set('country', 'OTHER')
                     }
                   }}
-                  className="w-full border border-faro-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-text-primary"
+                  className="w-full border border-faro-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-faro-primary"
                 />
               </div>
 
-              {/* 🟣 Existing pill UI (UNCHANGED behavior) */}
-              <div className="flex flex-wrap gap-2.5 mt-4">
+              {/* Globe — centered */}
+              <div className="flex justify-center w-full">
+                <CountryGlobe
+                  selectedCode={profile.country !== 'OTHER' ? profile.country ?? null : null}
+                  onSelect={(code) => {
+                    set('country', code as OnboardingCountry)
+                    setOtherCountry(
+                      COUNTRIES.find((c) => c.code === code)?.label ?? ''
+                    )
+                    setTimeout(advance, 200)
+                  }}
+                />
+              </div>
+
+              {/* Pill buttons — below globe */}
+              <div className="flex flex-wrap gap-2.5 mt-4 justify-center">
                 {COUNTRIES.map((c) => (
                   <PillButton
                     key={c.code}
@@ -196,7 +202,7 @@ export default function OnboardingPage() {
                     selected={profile.country === c.code}
                     onClick={() => {
                       set('country', c.code as OnboardingCountry)
-
+                      setOtherCountry(c.code !== 'OTHER' ? c.label : '')
                       if (c.code !== 'OTHER') {
                         setTimeout(advance, 160)
                       }
@@ -205,21 +211,20 @@ export default function OnboardingPage() {
                 ))}
               </div>
 
-              {/* 🧭 OTHER fallback (UNCHANGED behavior) */}
+              {/* OTHER fallback text input */}
               {profile.country === 'OTHER' && (
-                <div className="mt-3">
+                <div className="mt-3 w-full">
                   <input
                     type="text"
                     placeholder="Type your country..."
                     value={otherCountry}
                     onChange={(e) => setOtherCountry(e.target.value)}
-                    className="w-full border border-faro-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-text-primary"
+                    className="w-full border border-faro-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-faro-primary"
                   />
-
                   <button
                     onClick={advance}
                     disabled={!otherCountry.trim()}
-                    className="mt-3 w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+                    className="mt-3 w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
                   >
                     Continue
                   </button>
@@ -227,6 +232,7 @@ export default function OnboardingPage() {
               )}
             </QuestionCard>
           )}
+
           {/* Q2: Time in US */}
           {step === 2 && (
             <QuestionCard
