@@ -39,12 +39,11 @@ export function ConceptCard({
       }`}
     >
       {/* ── Header row ─────────────────────────────────────────────── */}
-      <button
-        className="w-full text-left px-5 py-4 flex items-start justify-between gap-4"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <div className="flex-1 min-w-0">
-          {/* home → US title */}
+      <div className="px-5 py-4 flex items-start gap-4">
+        <button
+          className="flex-1 min-w-0 text-left"
+          onClick={() => setOpen((o) => !o)}
+        >
           <p className={`font-semibold text-base leading-snug ${completed ? 'line-through text-text-secondary' : 'text-text-primary'}`}>
             <span className="font-normal text-text-secondary">{concept.homeConcept}</span>
             <span className="mx-2 text-faro-primary font-bold">→</span>
@@ -55,16 +54,24 @@ export function ConceptCard({
               {concept.usDescription}
             </p>
           )}
-        </div>
+        </button>
 
-        <div className="shrink-0 mt-0.5">
-          {completed ? (
-            <span className="text-faro-primary text-sm">✓</span>
-          ) : (
-            <span className="text-text-secondary text-sm">{open ? '↑' : '↓'}</span>
+        <div className="shrink-0 flex flex-col items-end gap-1.5 mt-0.5">
+          {concept.id && (
+            <Link
+              href={`/learn/${concept.id}`}
+              className="text-xs font-medium text-faro-primary hover:text-faro-dark transition-colors whitespace-nowrap"
+            >
+              Learn more →
+            </Link>
           )}
+          <button onClick={() => setOpen((o) => !o)} className="text-text-secondary text-sm">
+            {completed ? (
+              <span className="text-faro-primary">✓</span>
+            ) : open ? '↑' : '↓'}
+          </button>
         </div>
-      </button>
+      </div>
 
       {/* ── Expanded body ───────────────────────────────────────────── */}
       {open && (
@@ -114,12 +121,13 @@ export function ConceptCard({
 
           <button
             onClick={handleComplete}
+            disabled={completed}
             className={`
               mt-5 text-sm px-4 py-2 rounded-lg border transition-all
               ${popping ? 'pop' : ''}
               ${
                 completed
-                  ? 'border-faro-primary/30 text-faro-primary bg-faro-light hover:bg-white hover:border-faro-border hover:text-text-secondary'
+                  ? 'border-faro-primary/30 text-faro-primary bg-faro-light cursor-default'
                   : 'border-faro-border text-text-secondary hover:border-text-primary hover:text-text-primary'
               }
             `}

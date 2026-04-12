@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Skyline } from '@/components/Skyline'
+import { Header } from '@/components/Header'
+import { Cityscape } from '@/components/Cityscape'
 import type {
   ConceptDetail,
   CreditTranslation,
@@ -79,21 +80,10 @@ export default function ConceptDetailPage({ params }: { params: { conceptId: str
   const catLabel = CATEGORY_LABELS[detail.category] ?? detail.category
 
   return (
-    <main className="relative min-h-screen bg-white flex flex-col">
-      <Skyline />
+    <main className="min-h-screen bg-white">
+      <Header backHref="/result" backLabel="Back to results" />
 
-      {/* Nav */}
-      <nav className="relative z-10 px-6 py-4 border-b border-faro-border flex items-center justify-between">
-        <span className="text-lg font-bold text-faro-primary">Faro</span>
-        <Link
-          href="/result"
-          className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-        >
-          ← Back to results
-        </Link>
-      </nav>
-
-      <div className="relative z-10 max-w-2xl mx-auto w-full px-6 py-10 space-y-10">
+      <div className="pt-28 pb-80 px-6 max-w-2xl mx-auto w-full space-y-10">
 
         {/* ── S1 + S2: Breadcrumb + Hero ──────────────────────────────────── */}
         <section>
@@ -246,7 +236,7 @@ export default function ConceptDetailPage({ params }: { params: { conceptId: str
             </div>
           )}
           <p className="text-xs text-text-secondary text-center max-w-sm mx-auto mb-6">
-            Faro provides general financial education, not personalized financial advice.
+            Settle provides general financial education, not personalized financial advice.
             Always consult a licensed financial professional for decisions specific to your situation.
           </p>
           <div className="flex justify-center gap-3 flex-wrap">
@@ -266,6 +256,8 @@ export default function ConceptDetailPage({ params }: { params: { conceptId: str
         </section>
 
       </div>
+
+      <Cityscape progress={0.5} />
     </main>
   )
 }
@@ -480,13 +472,9 @@ function GettingStartedCard({ gs }: { gs: GSStep }) {
 
 function LoadingSkeleton() {
   return (
-    <main className="relative min-h-screen bg-white flex flex-col">
-      <Skyline />
-      <nav className="relative z-10 px-6 py-4 border-b border-faro-border flex items-center justify-between">
-        <div className="skeleton h-5 w-10 rounded" />
-        <div className="skeleton h-5 w-28 rounded" />
-      </nav>
-      <div className="relative z-10 max-w-2xl mx-auto w-full px-6 py-10 space-y-6">
+    <main className="min-h-screen bg-white">
+      <Header backHref="/result" backLabel="Back to results" />
+      <div className="pt-28 pb-80 px-6 max-w-2xl mx-auto w-full space-y-6">
         <div className="skeleton h-12 rounded-xl w-3/4" />
         <div className="skeleton h-6 rounded w-1/2" />
         <div className="skeleton h-28 rounded-2xl" />
@@ -494,6 +482,7 @@ function LoadingSkeleton() {
         <div className="skeleton h-32 rounded-2xl" />
         <div className="skeleton h-52 rounded-2xl" />
       </div>
+      <Cityscape progress={0.5} />
     </main>
   )
 }

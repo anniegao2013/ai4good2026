@@ -26,14 +26,14 @@ export async function POST(req: NextRequest) {
 
   // Build prompt and call Bedrock
   const systemPrompt =
-    'You are Faro, a financial guide for immigrants arriving in the US. ' +
+    'You are Settle, a financial guide for immigrants arriving in the US. ' +
     'Use only the facts in the verified knowledge base provided. ' +
     'Do not add information not present there. Be warm, specific, and jargon-free.'
 
   const toolLabels = (tools as string[])?.join(', ') || 'various financial tools'
 
   const userPrompt = `
-You are Faro, a financial guide for immigrants arriving in the US.
+You are Settle, a financial guide for immigrants arriving in the US.
 
 VERIFIED KNOWLEDGE BASE — use only these facts, do not add information not present here:
 ${JSON.stringify(concepts, null, 2)}

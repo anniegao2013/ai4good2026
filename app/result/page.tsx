@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Skyline } from '@/components/Skyline'
+import { motion } from 'framer-motion'
+import { Header } from '@/components/Header'
+import { Cityscape } from '@/components/Cityscape'
 import { ConceptCard } from '@/components/ConceptCard'
 import type { FaroResult, FaroProfile } from '@/lib/types'
 
@@ -11,7 +13,6 @@ const COUNTRY_LABELS: Record<string, string> = {
   GT: 'Guatemala', SV: 'El Salvador', HN: 'Honduras', OTHER: 'your home country',
 }
 
-/** Increment the global building count and notify the Skyline. */
 function addBuilding() {
   const current = parseInt(localStorage.getItem('faro_buildings') ?? '0', 10)
   const next = current + 1
@@ -34,7 +35,6 @@ export default function ResultPage() {
     const parsed: FaroProfile = JSON.parse(rawProfile)
     setProfile(parsed)
 
-    // Restore completed blocks
     const progress = JSON.parse(localStorage.getItem('faro_progress') ?? '{}')
     const done = new Set<number>()
     for (let i = 0; i < 3; i++) {
@@ -93,6 +93,9 @@ export default function ResultPage() {
     }
   }
 
+  const concepts  = result?.concepts ?? []
+  const progress  = 0.3 + (doneBlocks.size / Math.max(concepts.slice(0, 3).length, 1)) * 0.4
+
   if (error === 'no_profile') {
     return (
       <Centered>
@@ -117,89 +120,121 @@ export default function ResultPage() {
 
   if (loading || !result || !profile) {
     return (
-      <main className="relative min-h-screen bg-white flex flex-col">
-        <Skyline />
-        <NavBar />
-        <div className="relative z-10 max-w-xl mx-auto w-full px-6 py-10 space-y-3">
-          <div className="skeleton h-24 rounded-xl" />
-          <div className="skeleton h-14 rounded-xl" />
-          <div className="skeleton h-14 rounded-xl" />
-          <div className="skeleton h-14 rounded-xl" />
+      <main className="min-h-screen bg-white">
+        <Header backHref="/" backLabel="Start over" />
+        <div className="pt-28 pb-80 px-6 max-w-2xl mx-auto space-y-3">
+          <div className="skeleton h-32 rounded-2xl" />
+          <div className="skeleton h-20 rounded-2xl" />
+          <div className="skeleton h-20 rounded-2xl" />
+          <div className="skeleton h-20 rounded-2xl" />
         </div>
+        <Cityscape progress={0.3} />
       </main>
     )
   }
 
   const countryLabel   = COUNTRY_LABELS[profile.country] ?? profile.country
   const completedCount = doneBlocks.size
-  const concepts       = result.concepts ?? []
 
   return (
-    <main className="relative min-h-screen bg-white flex flex-col">
-      <Skyline />
-      <NavBar />
+    <main className="min-h-screen bg-white">
+      <Header backHref="/" backLabel="Start over" progress={progress} />
 
-      <div className="relative z-10 max-w-xl mx-auto w-full px-6 py-10 space-y-10">
+      <div className="pt-28 pb-80 px-6 max-w-2xl mx-auto space-y-8">
 
-        {/* Portrait */}
-        <section>
-          <p className="text-text-primary leading-relaxed text-base">
-            {result.portrait}
-          </p>
+        {/* ── Welcome card ────────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white rounded-3xl border border-faro-border p-6 md:p-8"
+        >
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-faro-light flex items-center justify-center shrink-0 text-xl">
+              ✨
+            </div>
+            <div>
+              <h2 className="font-semibold text-text-primary mb-1">Welcome to the US!</h2>
+              <p className="text-sm text-text-secondary">Here&rsquo;s your personalised financial roadmap</p>
+            </div>
+          </div>
+          <p className="text-text-primary leading-relaxed">{result.portrait}</p>
           {result.fallback && (
-            <p className="mt-2 text-xs text-text-secondary italic">
+            <p className="mt-3 text-xs text-text-secondary italic">
               AI unavailable — using knowledge base only.
             </p>
           )}
-        </section>
+        </motion.div>
 
-        {/* Concept cards — each one is a home→US translation tile */}
+        {/* ── Concept cards ───────────────────────────────────────────── */}
         {concepts.length > 0 && (
-          <section>
-            <div className="flex items-baseline justify-between mb-4">
-              <h2 className="text-lg font-semibold text-text-primary">
-                {countryLabel} → United States
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+                <span className="text-text-secondary">{countryLabel}</span>
+                <span className="text-faro-primary">→</span>
+                <span>United States</span>
               </h2>
               {completedCount > 0 && (
-                <span className="text-sm text-text-secondary">
-                  {completedCount} / {concepts.slice(0, 3).length} done
+                <span className="text-sm font-medium px-3 py-1 rounded-full bg-faro-light text-faro-dark">
+                  {completedCount} / {concepts.slice(0, 3).length}
                 </span>
               )}
             </div>
 
             <div className="space-y-2.5">
               {concepts.slice(0, 3).map((concept, i) => (
-                <ConceptCard
+                <motion.div
                   key={concept.id ?? i}
-                  concept={concept}
-                  action={result.blocks?.[i]?.action}
-                  actionUrl={result.blocks?.[i]?.actionUrl}
-                  onComplete={() => markDone(i)}
-                  completed={doneBlocks.has(i)}
-                />
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 + i * 0.05 }}
+                >
+                  <ConceptCard
+                    concept={concept}
+                    action={result.blocks?.[i]?.action}
+                    actionUrl={result.blocks?.[i]?.actionUrl}
+                    onComplete={() => markDone(i)}
+                    completed={doneBlocks.has(i)}
+                  />
+                </motion.div>
               ))}
             </div>
-          </section>
+          </motion.div>
         )}
 
-        {/* ── Dashboard CTA ─────────────────────────────────────────────── */}
-        <section className="border border-faro-border rounded-xl px-5 py-5">
-          <p className="text-sm font-semibold text-text-primary mb-1">
-            Ready to go deeper?
-          </p>
-          <p className="text-sm text-text-secondary mb-4">
-            Your full financial roadmap — banking, credit, taxes, and sending money home.
+        {/* ── Dashboard CTA ────────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="bg-faro-light rounded-3xl border border-faro-primary/20 p-6 md:p-8 text-center"
+        >
+          <h3 className="text-xl font-semibold text-text-primary mb-2">
+            Ready to take action?
+          </h3>
+          <p className="text-text-secondary mb-6 max-w-sm mx-auto">
+            Your full roadmap — banking, credit, taxes, and sending money home.
           </p>
           <Link
             href="/dashboard"
-            className="inline-block bg-faro-primary text-white font-medium text-sm px-5 py-2.5 rounded-lg hover:bg-faro-dark transition-colors"
+            className="inline-flex items-center gap-2 bg-faro-primary hover:bg-faro-dark text-white font-semibold px-8 py-3 rounded-full transition-colors"
           >
             Open your roadmap →
           </Link>
-        </section>
+        </motion.div>
 
-        {/* Footer */}
-        <div className="pb-20 flex gap-4 flex-wrap">
+        {/* ── Footer actions ───────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="flex justify-center gap-6"
+        >
           <button
             onClick={() => {
               if (navigator.share) {
@@ -209,31 +244,22 @@ export default function ResultPage() {
                 alert('Link copied!')
               }
             }}
-            className="text-sm text-text-secondary border border-faro-border rounded-lg px-4 py-2 hover:border-text-primary transition-colors"
+            className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
           >
-            Share Settle
+            ↗ Share
           </button>
           <Link
             href="/onboarding"
-            className="text-sm text-text-secondary border border-faro-border rounded-lg px-4 py-2 hover:border-text-primary transition-colors"
+            className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
           >
-            Start over
+            ↺ Start over
           </Link>
-        </div>
+        </motion.div>
 
       </div>
-    </main>
-  )
-}
 
-function NavBar() {
-  return (
-    <nav className="relative z-10 px-6 py-5 flex items-center justify-between border-b border-faro-border">
-      <span className="text-sm font-semibold tracking-widest uppercase text-text-primary">Settle</span>
-      <Link href="/onboarding" className="text-xs text-text-secondary hover:text-text-primary transition-colors">
-        Start over
-      </Link>
-    </nav>
+      <Cityscape progress={progress} />
+    </main>
   )
 }
 

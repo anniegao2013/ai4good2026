@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Skyline } from '@/components/Skyline'
+import { Header } from '@/components/Header'
+import { Cityscape } from '@/components/Cityscape'
 import type { FaroProfile } from '@/lib/types'
 
 // ── Hardcoded first-year checklist ──────────────────────────────────────────
@@ -143,20 +144,10 @@ export default function DashboardPage() {
   const completedCount = checked.size
 
   return (
-    <main className="relative min-h-screen bg-white flex flex-col">
-      <Skyline />
+    <main className="min-h-screen bg-white">
+      <Header backHref="/result" backLabel="My results" progress={completedCount / STEPS.length} />
 
-      {/* Nav */}
-      <nav className="relative z-10 px-6 py-5 border-b border-faro-border flex items-center justify-between">
-        <Link href="/" className="text-sm font-semibold tracking-widest uppercase text-text-primary">
-          Settle
-        </Link>
-        <Link href="/result" className="text-xs text-text-secondary hover:text-text-primary transition-colors">
-          ← My results
-        </Link>
-      </nav>
-
-      <div className="relative z-10 max-w-xl mx-auto w-full px-6 py-10 pb-36 space-y-10">
+      <div className="pt-28 pb-80 px-6 max-w-xl mx-auto w-full space-y-10">
 
         {/* Header */}
         <section>
@@ -347,6 +338,8 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      <Cityscape progress={0.3 + (completedCount / STEPS.length) * 0.5} />
     </main>
   )
 }
