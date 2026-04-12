@@ -3,37 +3,43 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Skyline } from '@/components/Skyline'
-import { BuildingBlock } from '@/components/BuildingBlock'
-import type { FaroResult, FaroProfile, ResultBlock } from '@/lib/types'
-
-const BLOCK_STATUS = ['start_here', 'up_next', 'coming_soon'] as const
+import { ConceptCard } from '@/components/ConceptCard'
+import type { FaroResult, FaroProfile } from '@/lib/types'
 
 const COUNTRY_LABELS: Record<string, string> = {
   MX: 'Mexico', IN: 'India', PH: 'Philippines', NG: 'Nigeria',
   GT: 'Guatemala', SV: 'El Salvador', HN: 'Honduras', OTHER: 'your home country',
 }
 
+/** Increment the global building count and notify the Skyline. */
+function addBuilding() {
+  const current = parseInt(localStorage.getItem('faro_buildings') ?? '0', 10)
+  const next = current + 1
+  localStorage.setItem('faro_buildings', String(next))
+  window.dispatchEvent(new CustomEvent('faro:skyline-update', { detail: { count: next } }))
+  return next
+}
+
 export default function ResultPage() {
-  const [result, setResult] = useState<FaroResult | null>(null)
+  const [result, setResult]   = useState<FaroResult | null>(null)
   const [profile, setProfile] = useState<FaroProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
   const [doneBlocks, setDoneBlocks] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     const rawProfile = localStorage.getItem('faro_profile')
-    if (!rawProfile) {
-      setError('no_profile')
-      setLoading(false)
-      return
-    }
+    if (!rawProfile) { setError('no_profile'); setLoading(false); return }
 
     const parsed: FaroProfile = JSON.parse(rawProfile)
     setProfile(parsed)
 
+    // Restore completed blocks
     const progress = JSON.parse(localStorage.getItem('faro_progress') ?? '{}')
     const done = new Set<number>()
-    if (progress.block0_completed) done.add(0)
+    for (let i = 0; i < 3; i++) {
+      if (progress[`block${i}_completed`]) done.add(i)
+    }
     if (done.size) setDoneBlocks(done)
 
     fetch('/api/parallel', {
@@ -41,10 +47,7 @@ export default function ResultPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(parsed),
     })
-      .then((r) => {
-        if (!r.ok) throw new Error('API error')
-        return r.json()
-      })
+      .then((r) => { if (!r.ok) throw new Error('API error'); return r.json() })
       .then((data: FaroResult) => {
         setResult(data)
         localStorage.setItem('faro_result', JSON.stringify(data))
@@ -58,9 +61,13 @@ export default function ResultPage() {
   }, [])
 
   function markDone(i: number) {
-    setDoneBlocks((prev) => new Set([...prev, i]))
+    if (doneBlocks.has(i)) return
+    setDoneBlocks((prev) => new Set(Array.from(prev).concat(i)))
+    // Save per-block progress
     const progress = JSON.parse(localStorage.getItem('faro_progress') ?? '{}')
     localStorage.setItem('faro_progress', JSON.stringify({ ...progress, [`block${i}_completed`]: true }))
+    // Grow the skyline
+    addBuilding()
   }
 
   if (error === 'no_profile') {
@@ -100,13 +107,13 @@ export default function ResultPage() {
     )
   }
 
-  const countryLabel = COUNTRY_LABELS[profile.country] ?? profile.country
+  const countryLabel   = COUNTRY_LABELS[profile.country] ?? profile.country
   const completedCount = doneBlocks.size
+  const concepts       = result.concepts ?? []
 
   return (
     <main className="relative min-h-screen bg-white flex flex-col">
       <Skyline />
-
       <NavBar />
 
       <div className="relative z-10 max-w-xl mx-auto w-full px-6 py-10 space-y-10">
@@ -123,29 +130,27 @@ export default function ResultPage() {
           )}
         </section>
 
-        {/* Priorities */}
-        {result.blocks && result.blocks.length > 0 && (
+        {/* Concept cards — each one is a home→US translation tile */}
+        {concepts.length > 0 && (
           <section>
             <div className="flex items-baseline justify-between mb-4">
-              <h2 className="text-lg font-semibold text-text-primary">Your priorities</h2>
+              <h2 className="text-lg font-semibold text-text-primary">
+                {countryLabel} → United States
+              </h2>
               {completedCount > 0 && (
                 <span className="text-sm text-text-secondary">
-                  {completedCount} / {result.blocks.length} done
+                  {completedCount} / {concepts.slice(0, 3).length} done
                 </span>
               )}
             </div>
 
             <div className="space-y-2.5">
-              {result.blocks.map((block: ResultBlock, i: number) => (
-                <BuildingBlock
-                  key={i}
-                  title={block.title}
-                  explanation={block.explanation}
-                  status={BLOCK_STATUS[i] ?? 'coming_soon'}
-                  locked={false}
-                  keyDifference={block.keyDifference}
-                  action={block.action}
-                  actionUrl={block.actionUrl}
+              {concepts.slice(0, 3).map((concept, i) => (
+                <ConceptCard
+                  key={concept.id ?? i}
+                  concept={concept}
+                  action={result.blocks?.[i]?.action}
+                  actionUrl={result.blocks?.[i]?.actionUrl}
                   onComplete={() => markDone(i)}
                   completed={doneBlocks.has(i)}
                 />
@@ -154,26 +159,24 @@ export default function ResultPage() {
           </section>
         )}
 
-        {/* Translation map — compact, below priorities */}
-        {result.concepts && result.concepts.length > 0 && (
-          <section>
-            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide mb-3">
-              {countryLabel} → United States
-            </p>
-            <div className="border border-faro-border rounded-xl divide-y divide-faro-border">
-              {result.concepts.map((c, i) => (
-                <div key={c.id ?? i} className="px-4 py-3 flex items-center gap-3 flex-wrap">
-                  <span className="text-sm text-text-primary font-medium">{c.homeConcept}</span>
-                  <span className="text-faro-primary text-sm">→</span>
-                  <span className="text-sm text-text-primary">{c.usEquivalent}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* ── Dashboard CTA ─────────────────────────────────────────────── */}
+        <section className="border border-faro-border rounded-xl px-5 py-5">
+          <p className="text-sm font-semibold text-text-primary mb-1">
+            Ready to go deeper?
+          </p>
+          <p className="text-sm text-text-secondary mb-4">
+            Your full financial roadmap — banking, credit, taxes, and sending money home.
+          </p>
+          <Link
+            href="/dashboard"
+            className="inline-block bg-faro-primary text-white font-medium text-sm px-5 py-2.5 rounded-lg hover:bg-faro-dark transition-colors"
+          >
+            Open your roadmap →
+          </Link>
+        </section>
 
         {/* Footer */}
-        <div className="pb-16 flex gap-4 flex-wrap">
+        <div className="pb-20 flex gap-4 flex-wrap">
           <button
             onClick={() => {
               if (navigator.share) {
