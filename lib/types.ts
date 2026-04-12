@@ -67,3 +67,68 @@ export interface FaroProfile {
   tools: HomeTool[]
   urgency: string
 }
+
+// ── Concept detail types ─────────────────────────────────────────────────────
+
+export interface ComparisonSide {
+  label: string
+  name: string
+  description: string
+  keyFeatures: string[]
+}
+
+export interface VisualStep {
+  number: number
+  title: string
+  description: string
+  timeframe?: string
+}
+
+export interface CreditRange {
+  label: string
+  homeRange: string
+  usRange: string
+  color: string
+}
+
+export interface CreditTranslation {
+  homeScoreSystem: string
+  usScoreSystem: string
+  ranges: CreditRange[]
+  keyInsight: string
+}
+
+export interface Cta {
+  label: string
+  url: string | null
+  primary?: boolean
+}
+
+export interface GettingStartedStep {
+  step: number
+  title: string
+  description: string
+  ctas: Cta[]
+}
+
+export interface ConceptDetail {
+  id: string
+  country: string
+  homeConcept: string
+  usEquivalent: string
+  category: Category
+  similarity: Similarity
+  urgency: Urgency
+  tagline: string
+  atAGlance: string
+  homeSide: ComparisonSide
+  usSide: ComparisonSide
+  keyDifferences: string[]
+  steps: VisualStep[]
+  creditTranslation?: CreditTranslation | null
+  whenGood: string[]
+  whenNotGood: string[]
+  gettingStarted: GettingStartedStep[]
+  questionsToAsk: string[]
+  caution: string
+}

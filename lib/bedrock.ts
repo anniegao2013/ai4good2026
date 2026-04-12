@@ -31,7 +31,8 @@ function bedrockBearerToken(): string | undefined {
 async function invokeClaudeWithBearer(
   prompt: string,
   systemPrompt: string,
-  token: string
+  token: string,
+  maxTokens = 1024
 ): Promise<string> {
   const region = bedrockRegion()
   const modelId = resolveModelId()
@@ -39,7 +40,7 @@ async function invokeClaudeWithBearer(
 
   const body = JSON.stringify({
     anthropic_version: 'bedrock-2023-05-31',
-    max_tokens: 1024,
+    max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],
   })
@@ -88,15 +89,15 @@ function bedrockClient() {
   return new BedrockRuntimeClient({ region })
 }
 
-export async function invokeClaude(prompt: string, systemPrompt: string): Promise<string> {
+export async function invokeClaude(prompt: string, systemPrompt: string, maxTokens = 1024): Promise<string> {
   const bearer = bedrockBearerToken()
   if (bearer) {
-    return invokeClaudeWithBearer(prompt, systemPrompt, bearer)
+    return invokeClaudeWithBearer(prompt, systemPrompt, bearer, maxTokens)
   }
 
   const body = JSON.stringify({
     anthropic_version: 'bedrock-2023-05-31',
-    max_tokens: 1024,
+    max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],
   })

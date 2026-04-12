@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 const CATEGORY_LABELS: Record<string, string> = {
   banking:    'Banking',
   credit:     'Credit',
@@ -21,6 +23,7 @@ interface TranslationRowProps {
   usEquivalent: string
   category: string
   keyDifference: string
+  conceptId?: string
 }
 
 export function TranslationRow({
@@ -28,12 +31,13 @@ export function TranslationRow({
   usEquivalent,
   category,
   keyDifference,
+  conceptId,
 }: TranslationRowProps) {
   const label = CATEGORY_LABELS[category] ?? category
   const color = CATEGORY_COLORS[category] ?? 'bg-gray-50 text-gray-700'
 
-  return (
-    <div className="py-4 border-b border-faro-border last:border-0">
+  const inner = (
+    <>
       <div className="flex items-center gap-3 flex-wrap">
         <span className="font-semibold text-text-primary">{homeConcept}</span>
         <span className="text-faro-primary font-bold text-lg leading-none">→</span>
@@ -41,8 +45,30 @@ export function TranslationRow({
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${color}`}>
           {label}
         </span>
+        {conceptId && (
+          <span className="ml-auto text-xs font-medium text-faro-primary">
+            Learn more →
+          </span>
+        )}
       </div>
       <p className="mt-1 text-sm text-text-secondary leading-relaxed">{keyDifference}</p>
+    </>
+  )
+
+  if (conceptId) {
+    return (
+      <Link
+        href={`/learn/${conceptId}`}
+        className="block py-4 border-b border-faro-border last:border-0 hover:bg-faro-surface rounded-xl px-3 -mx-3 transition-colors"
+      >
+        {inner}
+      </Link>
+    )
+  }
+
+  return (
+    <div className="py-4 border-b border-faro-border last:border-0">
+      {inner}
     </div>
   )
 }
