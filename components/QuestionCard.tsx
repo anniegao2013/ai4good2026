@@ -6,12 +6,11 @@ interface QuestionCardProps {
 
 export function QuestionCard({ question, whyWeAsk, children }: QuestionCardProps) {
   return (
-    <div className="question-enter">
-      <h2 className="text-2xl font-semibold text-text-primary mb-2 text-balance leading-snug">
+    <div className="question-enter w-full">
+      <h2 className="text-3xl font-bold text-text-primary mb-3 leading-tight">
         {question}
       </h2>
-      <p className="text-sm text-text-secondary mb-7">
-        <span className="font-medium text-text-secondary">Why we ask: </span>
+      <p className="text-sm text-text-secondary italic mb-8">
         {whyWeAsk}
       </p>
       {children}

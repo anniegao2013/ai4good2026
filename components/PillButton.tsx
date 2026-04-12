@@ -14,11 +14,11 @@ export function PillButton({ label, selected, onClick, disabled }: PillButtonPro
       onClick={onClick}
       disabled={disabled}
       className={`
-        px-4 py-2.5 rounded-full border text-sm font-medium transition-all
-        focus:outline-none focus:ring-2 focus:ring-offset-1
+        px-4 py-2 rounded-lg border text-sm transition-all
+        focus:outline-none
         ${selected
-          ? 'bg-faro-primary border-faro-primary text-white shadow-sm focus:ring-faro-primary'
-          : 'bg-white border-faro-border text-text-primary hover:border-faro-primary hover:text-faro-primary focus:ring-faro-primary'
+          ? 'bg-faro-dark border-faro-dark text-white'
+          : 'bg-white border-faro-border text-text-primary hover:border-text-primary'
         }
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
       `}

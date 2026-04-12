@@ -4,22 +4,19 @@ interface ProgressBarProps {
 }
 
 export function ProgressBar({ current, total }: ProgressBarProps) {
-  const pct = Math.round(((current - 1) / total) * 100)
-
   return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-1.5">
-        <span className="text-xs text-text-secondary font-medium">
-          Question {current} of {total}
-        </span>
-        <span className="text-xs text-text-secondary">{pct}% complete</span>
-      </div>
-      <div className="h-1.5 bg-faro-border rounded-full overflow-hidden">
+    <div className="flex items-center gap-1.5">
+      {Array.from({ length: total }, (_, i) => (
         <div
-          className="h-full bg-faro-primary rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${pct}%` }}
+          key={i}
+          className={`h-1 rounded-full transition-all duration-300 ${
+            i < current
+              ? 'bg-faro-primary w-8'
+              : 'bg-faro-border w-3'
+          }`}
         />
-      </div>
+      ))}
+      <span className="ml-2 text-xs text-text-secondary">{current} / {total}</span>
     </div>
   )
 }

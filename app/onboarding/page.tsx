@@ -130,12 +130,12 @@ export default function OnboardingPage() {
       <Skyline />
 
       {/* Nav */}
-      <nav className="relative z-10 px-6 py-4 border-b border-faro-border flex items-center justify-between">
-        <span className="text-lg font-bold text-faro-primary">Faro</span>
+      <nav className="relative z-10 px-6 py-5 border-b border-faro-border flex items-center justify-between">
+        <span className="text-sm font-semibold tracking-widest uppercase text-text-primary">Faro</span>
         {step > 1 && (
           <button
             onClick={back}
-            className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+            className="text-xs text-text-secondary hover:text-text-primary transition-colors"
           >
             ← Back
           </button>
@@ -183,7 +183,7 @@ export default function OnboardingPage() {
                       set('country', 'OTHER')
                     }
                   }}
-                  className="w-full border border-faro-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-faro-primary"
+                  className="w-full border border-faro-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-text-primary"
                 />
               </div>
 
@@ -213,13 +213,13 @@ export default function OnboardingPage() {
                     placeholder="Type your country..."
                     value={otherCountry}
                     onChange={(e) => setOtherCountry(e.target.value)}
-                    className="w-full border border-faro-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-faro-primary"
+                    className="w-full border border-faro-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-text-primary"
                   />
 
                   <button
                     onClick={advance}
                     disabled={!otherCountry.trim()}
-                    className="mt-3 w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                    className="mt-3 w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
                   >
                     Continue
                   </button>
@@ -313,9 +313,9 @@ export default function OnboardingPage() {
               <button
                 onClick={advance}
                 disabled={(profile.tools ?? []).length === 0}
-                className="w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
+                className="w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
               >
-                Continue →
+                Continue
               </button>
             </QuestionCard>
           )}
