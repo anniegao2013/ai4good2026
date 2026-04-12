@@ -162,11 +162,16 @@ export default function ResultPage() {
             </p>
             <div className="border border-faro-border rounded-xl divide-y divide-faro-border">
               {result.concepts.map((c, i) => (
-                <div key={c.id ?? i} className="px-4 py-3 flex items-center gap-3 flex-wrap">
+                <Link
+                  key={c.id ?? i}
+                  href={`/learn/${c.id}`}
+                  className="flex items-center gap-3 flex-wrap px-4 py-3 hover:bg-faro-surface transition-colors"
+                >
                   <span className="text-sm text-text-primary font-medium">{c.homeConcept}</span>
                   <span className="text-faro-primary text-sm">→</span>
                   <span className="text-sm text-text-primary">{c.usEquivalent}</span>
-                </div>
+                  <span className="ml-auto text-xs text-faro-primary">Learn more →</span>
+                </Link>
               ))}
             </div>
           </section>

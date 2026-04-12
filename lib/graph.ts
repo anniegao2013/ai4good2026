@@ -132,3 +132,8 @@ export function resolveConceptsForProfile(
 export function getLocalConcepts(country: string, tools?: string[]): ConceptNode[] {
   return getActivatedConcepts(country, tools)
 }
+
+/** Look up a single concept by its ID (e.g. 'MX.tanda') */
+export function getConceptById(id: string): ConceptNode | undefined {
+  return KNOWLEDGE_GRAPH.find((c) => c.id === id)
+}

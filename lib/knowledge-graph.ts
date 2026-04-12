@@ -5,6 +5,7 @@
 export { KNOWLEDGE_GRAPH } from './knowledge-graph-data'
 export {
   getActivatedConcepts,
+  getConceptById,
   getLocalConcepts,
   orderConceptsForProfile,
   resolveConceptsForProfile,
