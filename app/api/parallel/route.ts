@@ -1,55 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getConceptsByCountry, getConceptsByTools } from '@/lib/neptune'
 import { invokeClaude } from '@/lib/bedrock'
-import { toNeptuneCountry, toolsToCategories, getLocalConcepts } from '@/lib/knowledge-graph'
-import type { ConceptNode } from '@/lib/types'
+import { getLocalConcepts } from '@/lib/knowledge-graph'
+import type { ConceptNode, ResultBlock } from '@/lib/types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RawConcept = Record<string, any>
-
-/** Normalize a Neptune valueMap result into a plain ConceptNode */
-function normalizeNeptuneConcept(raw: RawConcept): ConceptNode {
-  const v = (key: string) => {
-    const val = raw[key]
-    if (Array.isArray(val)) return val[0]
-    if (val && typeof val === 'object' && '@value' in val) return val['@value']
-    return val ?? ''
-  }
-  return {
-    id:              v('id'),
-    country:         v('country'),
-    homeConcept:     v('homeConcept'),
-    homeDescription: v('homeDescription'),
-    usEquivalent:    v('usEquivalent'),
-    usDescription:   v('usDescription'),
-    similarity:      v('similarity'),
-    keyDifference:   v('keyDifference'),
-    caution:         v('caution'),
-    urgency:         v('urgency'),
-    category:        v('category'),
-  }
+/** Accept raw model output even when wrapped in ```json fences or leading prose. */
+function parseModelJson(raw: string): unknown {
+  const trimmed = raw.trim()
+  const fence = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```/m)
+  if (fence) return JSON.parse(fence[1].trim())
+  const start = trimmed.indexOf('{')
+  const end = trimmed.lastIndexOf('}')
+  if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1))
+  return JSON.parse(trimmed)
 }
 
 export async function POST(req: NextRequest) {
   const { country, tools, urgency, status, hasSsn, timeInUS } = await req.json()
 
-  // Map onboarding values to Neptune-compatible values
-  const neptuneCountry = toNeptuneCountry(country)
-  const categories = toolsToCategories(tools ?? [])
+  const concepts: ConceptNode[] = getLocalConcepts(country, tools)
 
-  // Step 1: Query Neptune for relevant concept nodes; fall back to local graph
-  let concepts: ConceptNode[] = []
-  try {
-    const raw: RawConcept[] = categories.length > 0
-      ? await getConceptsByTools(neptuneCountry, categories)
-      : await getConceptsByCountry(neptuneCountry)
-    concepts = raw.map(normalizeNeptuneConcept)
-  } catch (err) {
-    console.error('Neptune query failed, using local knowledge graph:', err)
-    concepts = getLocalConcepts(country, tools)
-  }
-
-  // Step 2: Build prompt and call Bedrock
+  // Build prompt and call Bedrock
   const systemPrompt =
     'You are Faro, a financial guide for immigrants arriving in the US. ' +
     'Use only the facts in the verified knowledge base provided. ' +
@@ -93,7 +63,13 @@ Return only valid JSON. No markdown. No preamble. 3 blocks maximum, ordered by u
 
   try {
     const raw = await invokeClaude(userPrompt, systemPrompt)
-    const parsed = JSON.parse(raw)
+    const parsed = parseModelJson(raw) as {
+      portrait?: string
+      blocks?: ResultBlock[]
+    }
+    if (!parsed.portrait || !Array.isArray(parsed.blocks)) {
+      throw new Error('Model JSON missing portrait or blocks')
+    }
     return NextResponse.json({ ...parsed, concepts })
   } catch (err) {
     console.error('Bedrock call failed, using fallback response:', err)

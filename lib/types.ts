@@ -1,4 +1,4 @@
-export type NeptuneCountry = 'MX' | 'IN' | 'PH' | 'NG' | 'CA'
+export type GraphCountry = 'MX' | 'IN' | 'PH' | 'NG' | 'CA'
 
 export type Similarity = 'equivalent' | 'similar' | 'partial' | 'no_equivalent'
 
@@ -12,7 +12,7 @@ export type Category =
   | 'tax'
   | 'housing'
 
-/** Maps onboarding country codes to Neptune country codes */
+/** Maps onboarding country codes to knowledge-graph country codes */
 export type OnboardingCountry =
   | 'MX' | 'IN' | 'PH' | 'NG' | 'GT' | 'SV' | 'HN' | 'OTHER'
 
@@ -29,7 +29,7 @@ export type HomeTool =
 
 export interface ConceptNode {
   id: string
-  country: NeptuneCountry | string
+  country: GraphCountry | string
   homeConcept: string
   homeDescription: string
   usEquivalent: string

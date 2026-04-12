@@ -1,6 +1,5 @@
 /**
- * Hardcoded knowledge graph — used as a fallback when Neptune is unavailable.
- * Country codes here match Neptune: MX, IN, PH, NG, CA (Central America).
+ * In-app knowledge graph (static lookup). Country codes: MX, IN, PH, NG, CA (Central America bucket).
  */
 import type { ConceptNode, Category } from './types'
 
@@ -317,13 +316,13 @@ export const KNOWLEDGE_GRAPH: ConceptNode[] = [
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Maps onboarding country to Neptune country code */
-export function toNeptuneCountry(country: string): string {
+/** Maps onboarding country to knowledge-graph country code (Central America → CA). */
+export function toGraphCountry(country: string): string {
   if (['GT', 'SV', 'HN'].includes(country)) return 'CA'
   return country
 }
 
-/** Maps home tool selections to Neptune categories */
+/** Maps home tool selections to graph categories */
 export function toolsToCategories(tools: string[]): Category[] {
   const map: Record<string, Category[]> = {
     bank_account:     ['banking'],
@@ -347,8 +346,8 @@ export function toolsToCategories(tools: string[]): Category[] {
 
 /** Fallback: filter hardcoded graph by country + tools */
 export function getLocalConcepts(country: string, tools?: string[]): ConceptNode[] {
-  const neptuneCountry = toNeptuneCountry(country)
-  const all = KNOWLEDGE_GRAPH.filter((c) => c.country === neptuneCountry)
+  const graphCountry = toGraphCountry(country)
+  const all = KNOWLEDGE_GRAPH.filter((c) => c.country === graphCountry)
   if (!tools || tools.length === 0) return all
   const cats = toolsToCategories(tools)
   return all.filter((c) => cats.includes(c.category as Category))
