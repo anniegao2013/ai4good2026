@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ProgressBar } from '@/components/ProgressBar'
@@ -7,7 +8,11 @@ import { PillButton } from '@/components/PillButton'
 import { QuestionCard } from '@/components/QuestionCard'
 import { Skyline } from '@/components/Skyline'
 import type { FaroProfile, OnboardingCountry, HomeTool } from '@/lib/types'
-import { CountryGlobe } from '@/components/CountryGlobe'
+
+const CountryGlobe = dynamic(
+  () => import('@/components/CountryGlobe').then((m) => m.CountryGlobe),
+  { ssr: false }
+)
 
 // ── Option data ──────────────────────────────────────────────────────────────
 

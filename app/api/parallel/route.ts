@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { invokeClaude } from '@/lib/bedrock'
-import { getLocalConcepts } from '@/lib/knowledge-graph'
+import { resolveConceptsForProfile } from '@/lib/knowledge-graph'
 import type { ConceptNode, ResultBlock } from '@/lib/types'
 
 /** Accept raw model output even when wrapped in ```json fences or leading prose. */
@@ -17,7 +17,12 @@ function parseModelJson(raw: string): unknown {
 export async function POST(req: NextRequest) {
   const { country, tools, urgency, status, hasSsn, timeInUS } = await req.json()
 
-  const concepts: ConceptNode[] = getLocalConcepts(country, tools)
+  const concepts: ConceptNode[] = resolveConceptsForProfile({
+    country,
+    tools: tools ?? [],
+    urgency,
+    hasSsn,
+  })
 
   // Build prompt and call Bedrock
   const systemPrompt =
@@ -58,7 +63,8 @@ Generate a JSON response with exactly these fields:
   ]
 }
 
-Return only valid JSON. No markdown. No preamble. 3 blocks maximum, ordered by urgency for this specific user.
+Return only valid JSON. No markdown. No preamble. 3 blocks maximum.
+The VERIFIED KNOWLEDGE BASE array is already ordered by priority for this user (top items first) — follow that order unless a lower item clearly fits their stated top worry better.
 `.trim()
 
   try {
