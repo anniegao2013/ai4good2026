@@ -227,7 +227,6 @@ export default function OnboardingPage() {
               )}
             </QuestionCard>
           )}
-
           {/* Q2: Time in US */}
           {step === 2 && (
             <QuestionCard
