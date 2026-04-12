@@ -66,10 +66,6 @@ function buildFallback(concept: ConceptNode): ConceptDetail {
         timeframe: 'Month 1',
       },
     ],
-    whenGood: [`When you want to use ${concept.usEquivalent} in the US.`],
-    whenNotGood: [
-      'When you need personalized financial advice — consult a licensed advisor.',
-    ],
     gettingStarted: [
       {
         step: 1,
@@ -77,12 +73,6 @@ function buildFallback(concept: ConceptNode): ConceptDetail {
         description: concept.usDescription,
         ctas: [{ label: 'Search online', url: null, primary: true }],
       },
-    ],
-    questionsToAsk: [
-      `What documents do I need to set up ${concept.usEquivalent}?`,
-      'Are there any fees I should know about?',
-      'How does this affect my credit score?',
-      'What alternatives exist if I do not qualify yet?',
     ],
   }
 }
@@ -142,13 +132,11 @@ Return JSON with exactly these fields:
   },
   "keyDifferences": [
     "Complete sentence about difference 1",
-    "Complete sentence about difference 2",
-    "Complete sentence about difference 3"
+    "Complete sentence about difference 2"
   ],
   "steps": [
     {"number": 1, "title": "action title", "description": "2 sentences of practical guidance", "timeframe": "Day 1"},
-    {"number": 2, "title": "action title", "description": "2 sentences of practical guidance", "timeframe": "Week 1"},
-    {"number": 3, "title": "action title", "description": "2 sentences of practical guidance", "timeframe": "Month 1"}
+    {"number": 2, "title": "action title", "description": "2 sentences of practical guidance", "timeframe": "Week 1"}
   ],
   "creditTranslation": ${isCredit ? `{
     "homeScoreSystem": "name and range (e.g. CIBIL Score 300-900)",
@@ -161,38 +149,18 @@ Return JSON with exactly these fields:
     ],
     "keyInsight": "1-2 sentences about the most important thing to know when translating scores"
   }` : 'null'},
-  "whenGood": [
-    "Scenario 1 where this tool is the right choice (complete sentence)",
-    "Scenario 2 where this tool is the right choice"
-  ],
-  "whenNotGood": [
-    "Scenario 1 where to be careful or choose something else (complete sentence)",
-    "Scenario 2 where to be careful"
-  ],
   "gettingStarted": [
     {
       "step": 1,
       "title": "First concrete action",
       "description": "2-3 sentences of practical, specific guidance",
       "ctas": [{"label": "button label", "url": null, "primary": true}]
-    },
-    {
-      "step": 2,
-      "title": "Second concrete action",
-      "description": "2-3 sentences of practical, specific guidance",
-      "ctas": [{"label": "button label", "url": null, "primary": false}]
     }
-  ],
-  "questionsToAsk": [
-    "Question 1 to ask a bank or credit union?",
-    "Question 2?",
-    "Question 3?",
-    "Question 4?"
   ]
 }`.trim()
 
   try {
-    const raw = await invokeClaude(userPrompt, systemPrompt, 2048)
+    const raw = await invokeClaude(userPrompt, systemPrompt, 1200)
     const parsed = parseModelJson(raw) as Partial<ConceptDetail>
 
     const detail: ConceptDetail = {
@@ -211,10 +179,7 @@ Return JSON with exactly these fields:
       keyDifferences:   Array.isArray(parsed.keyDifferences) ? parsed.keyDifferences : [concept.keyDifference],
       steps:            Array.isArray(parsed.steps) ? parsed.steps : [],
       creditTranslation: parsed.creditTranslation ?? null,
-      whenGood:         Array.isArray(parsed.whenGood) ? parsed.whenGood : [],
-      whenNotGood:      Array.isArray(parsed.whenNotGood) ? parsed.whenNotGood : [],
       gettingStarted:   Array.isArray(parsed.gettingStarted) ? parsed.gettingStarted : [],
-      questionsToAsk:   Array.isArray(parsed.questionsToAsk) ? parsed.questionsToAsk : [],
     }
 
     return NextResponse.json(detail)

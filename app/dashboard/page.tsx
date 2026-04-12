@@ -5,15 +5,47 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Cityscape } from "@/components/Cityscape"
-import { 
-  roadmapNodes, 
-  tracks, 
-  type RoadmapNode, 
+import {
+  roadmapNodes,
+  tracks,
+  type RoadmapNode,
   type TrackId,
   getSuggestedNextNodes,
-  getDependentNodes 
+  getDependentNodes
 } from "@/lib/roadmap-data"
 import { cn } from "@/lib/utils"
+import type { FaroProfile, HomeTool } from "@/lib/types"
+
+/** Decide which tracks are relevant based on the user's onboarding answers. */
+function getRelevantTracks(profile: FaroProfile | null): Set<TrackId> {
+  const all: Set<TrackId> = new Set(['banking', 'credit', 'taxes', 'remittance', 'savings'])
+  if (!profile) return all
+
+  const tools: HomeTool[] = profile.tools ?? []
+  const urgency = profile.urgency ?? ''
+  const hasSsn  = profile.hasSsn ?? ''
+
+  const relevant = new Set<TrackId>(['banking']) // always
+
+  if (tools.includes('credit_card') || tools.includes('loans') || urgency === 'Building credit') {
+    relevant.add('credit')
+  }
+  if (hasSsn !== 'Yes' || urgency === 'Understanding taxes') {
+    relevant.add('taxes')
+  }
+  if (urgency === 'Sending money home' || tools.includes('rotating_savings')) {
+    relevant.add('remittance')
+  }
+  if (
+    tools.includes('investments') || tools.includes('rotating_savings') ||
+    tools.includes('real_estate') || urgency === 'Saving / investing'
+  ) {
+    relevant.add('savings')
+  }
+
+  // Fallback: if nothing matched beyond banking, show everything
+  return relevant.size === 1 ? all : relevant
+}
 import { 
   Check, 
   ChevronRight,
@@ -75,14 +107,12 @@ function RoadmapNodeCard({
   isUnlocked,
   isFocused,
   onSelect,
-  onComplete
 }: {
   node: RoadmapNode
   isCompleted: boolean
   isUnlocked: boolean
   isFocused: boolean
   onSelect: () => void
-  onComplete: () => void
 }) {
   const track = getTrackConfig(node.track)
   const x = node.position.x * CELL_WIDTH + CANVAS_PADDING
@@ -162,7 +192,7 @@ function NodeDetailPanel({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ type: "spring", damping: 25, stiffness: 300 }}
-      className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-card border-l border-border shadow-2xl z-50 overflow-y-auto"
+      className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white border-l border-border shadow-2xl z-50 overflow-y-auto"
     >
       <div className="p-6">
         {/* Header */}
@@ -264,10 +294,10 @@ function NodeDetailPanel({
 }
 
 // Track legend
-function TrackLegend() {
+function TrackLegend({ visibleTracks }: { visibleTracks: typeof tracks }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {tracks.map(track => (
+      {visibleTracks.map(track => (
         <div 
           key={track.id}
           className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium"
@@ -294,16 +324,26 @@ function RoadmapContent() {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [zoom, setZoom] = useState(1.3)
+  const [profile, setProfile] = useState<FaroProfile | null>(null)
   const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 })
-  
+
+  useEffect(() => {
+    const raw = localStorage.getItem('faro_profile')
+    if (raw) setProfile(JSON.parse(raw))
+  }, [])
+
+  const relevantTracks = getRelevantTracks(profile)
+  const visibleNodes   = roadmapNodes.filter(n => relevantTracks.has(n.track))
+  const visibleTracks  = tracks.filter(t => relevantTracks.has(t.id))
+
   // Calculate canvas dimensions
-  const maxX = Math.max(...roadmapNodes.map(n => n.position.x))
-  const maxY = Math.max(...roadmapNodes.map(n => n.position.y))
+  const maxX = Math.max(...visibleNodes.map(n => n.position.x), 0)
+  const maxY = Math.max(...visibleNodes.map(n => n.position.y), 0)
   const canvasWidth = (maxX + 1) * CELL_WIDTH + CANVAS_PADDING * 2
   const canvasHeight = (maxY + 1) * CELL_HEIGHT + CANVAS_PADDING * 2
   
-  const progress = completedTasks.size / roadmapNodes.length
-  const suggestedNext = getSuggestedNextNodes(completedTasks, 3)
+  const progress = completedTasks.size / Math.max(visibleNodes.length, 1)
+  const suggestedNext = getSuggestedNextNodes(completedTasks, 3).filter(n => relevantTracks.has(n.track))
   
   // Check if a node is unlocked
   const isNodeUnlocked = useCallback((node: RoadmapNode) => {
@@ -436,7 +476,7 @@ function RoadmapContent() {
             <div className="flex items-center gap-4">
               <div className="text-sm">
                 <span className="font-semibold text-primary">{completedTasks.size}</span>
-                <span className="text-muted-foreground">/{roadmapNodes.length} tasks</span>
+                <span className="text-muted-foreground">/{visibleNodes.length} tasks</span>
               </div>
               <Link
                 href={`/result?${searchParams.toString()}`}
@@ -458,7 +498,7 @@ function RoadmapContent() {
           </div>
           
           {/* Track legend */}
-          <TrackLegend />
+          <TrackLegend visibleTracks={visibleTracks} />
         </div>
       </header>
       
@@ -548,13 +588,13 @@ function RoadmapContent() {
           }}
         >
           {/* Connection lines */}
-          <svg 
+          <svg
             className="absolute inset-0 pointer-events-none"
             style={{ width: canvasWidth, height: canvasHeight }}
           >
-            {roadmapNodes.map(node => 
+            {visibleNodes.map(node =>
               node.dependencies.map(depId => {
-                const depNode = roadmapNodes.find(n => n.id === depId)
+                const depNode = visibleNodes.find(n => n.id === depId)
                 if (!depNode) return null
                 const isCompleted = completedTasks.has(depId)
                 return (
@@ -568,9 +608,9 @@ function RoadmapContent() {
               })
             )}
           </svg>
-          
+
           {/* Nodes */}
-          {roadmapNodes.map(node => (
+          {visibleNodes.map(node => (
             <div key={node.id} className="node-card">
               <RoadmapNodeCard
                 node={node}
@@ -578,7 +618,6 @@ function RoadmapContent() {
                 isUnlocked={isNodeUnlocked(node)}
                 isFocused={selectedNode?.id === node.id}
                 onSelect={() => setSelectedNode(node)}
-                onComplete={() => toggleComplete(node.id)}
               />
             </div>
           ))}
@@ -623,7 +662,7 @@ function RoadmapContent() {
       
       {/* Completion celebration */}
       <AnimatePresence>
-        {completedTasks.size === roadmapNodes.length && (
+        {visibleNodes.length > 0 && completedTasks.size >= visibleNodes.length && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

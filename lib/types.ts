@@ -126,9 +126,9 @@ export interface ConceptDetail {
   keyDifferences: string[]
   steps: VisualStep[]
   creditTranslation?: CreditTranslation | null
-  whenGood: string[]
-  whenNotGood: string[]
   gettingStarted: GettingStartedStep[]
-  questionsToAsk: string[]
+  whenGood?: string[]
+  whenNotGood?: string[]
+  questionsToAsk?: string[]
   caution: string
 }

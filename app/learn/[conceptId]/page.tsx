@@ -163,18 +163,7 @@ export default function ConceptDetailPage({ params }: { params: { conceptId: str
           </section>
         )}
 
-        {/* ── S8: When good / not good ─────────────────────────────────────── */}
-        {(detail.whenGood.length > 0 || detail.whenNotGood.length > 0) && (
-          <section>
-            <h2 className="text-xl font-semibold text-text-primary mb-4">When to use it</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {detail.whenGood.length > 0 && <WhenCard type="good" items={detail.whenGood} />}
-              {detail.whenNotGood.length > 0 && <WhenCard type="bad" items={detail.whenNotGood} />}
-            </div>
-          </section>
-        )}
-
-        {/* ── S9: Getting-started checklist ───────────────────────────────── */}
+        {/* ── S8: Getting-started checklist ───────────────────────────────── */}
         {detail.gettingStarted.length > 0 && (
           <section>
             <h2 className="text-xl font-semibold text-text-primary mb-5">Getting started</h2>
@@ -186,46 +175,7 @@ export default function ConceptDetailPage({ params }: { params: { conceptId: str
           </section>
         )}
 
-        {/* ── S10: Questions to ask ────────────────────────────────────────── */}
-        {detail.questionsToAsk.length > 0 && (
-          <section>
-            <h2 className="text-xl font-semibold text-text-primary mb-4">
-              Questions to ask your bank
-            </h2>
-            <div className="bg-white border border-faro-border rounded-2xl divide-y divide-faro-border">
-              {detail.questionsToAsk.map((q, i) => (
-                <div key={i} className="px-5 py-4 flex gap-3 items-start">
-                  <span className="text-faro-primary font-bold shrink-0 text-sm">Q{i + 1}</span>
-                  <p className="text-sm text-text-primary leading-relaxed">{q}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── S11: Video placeholder ───────────────────────────────────────── */}
-        <section>
-          <h2 className="text-xl font-semibold text-text-primary mb-4">Video guide</h2>
-          <div className="bg-faro-surface border border-faro-border rounded-2xl flex flex-col items-center justify-center py-14 gap-4">
-            <div className="w-16 h-16 rounded-full bg-faro-light flex items-center justify-center">
-              <svg
-                className="w-7 h-7 text-faro-primary ml-1"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-              </svg>
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-text-primary">Video coming soon</p>
-              <p className="text-sm text-text-secondary mt-1">
-                A step-by-step walkthrough of {detail.usEquivalent}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── S12: Bottom reassurance ──────────────────────────────────────── */}
+        {/* ── S9: Bottom reassurance ──────────────────────────────────────── */}
         <section className="border-t border-faro-border pt-8 pb-4">
           {detail.caution && (
             <div className="bg-rose-50 border border-rose-200 rounded-xl px-5 py-4 mb-6">
@@ -387,37 +337,6 @@ function CreditScoreSection({ ct }: { ct: CreditTranslation }) {
         </p>
         <p className="text-sm text-faro-dark leading-relaxed">{ct.keyInsight}</p>
       </div>
-    </div>
-  )
-}
-
-function WhenCard({ type, items }: { type: 'good' | 'bad'; items: string[] }) {
-  const isGood = type === 'good'
-  return (
-    <div
-      className={`rounded-2xl border p-4 ${
-        isGood ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'
-      }`}
-    >
-      <p
-        className={`text-xs font-semibold uppercase tracking-wide mb-3 ${
-          isGood ? 'text-green-700' : 'text-amber-700'
-        }`}
-      >
-        {isGood ? '✓ Good when' : '⚠ Be careful if'}
-      </p>
-      <ul className="space-y-2">
-        {items.map((item, i) => (
-          <li key={i} className="flex gap-2 text-sm text-text-primary">
-            <span
-              className={`shrink-0 font-bold ${isGood ? 'text-green-600' : 'text-amber-600'}`}
-            >
-              →
-            </span>
-            {item}
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
