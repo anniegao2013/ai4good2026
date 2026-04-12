@@ -20,7 +20,6 @@ interface BuildingBlockProps {
 export function BuildingBlock({
   title,
   explanation,
-  status,
   locked = false,
   expanded: initialExpanded = false,
   keyDifference,

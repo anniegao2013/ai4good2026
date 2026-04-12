@@ -58,7 +58,7 @@ export default function ResultPage() {
   }, [])
 
   function markDone(i: number) {
-    setDoneBlocks((prev) => new Set([...prev, i]))
+    setDoneBlocks((prev) => { const next = new Set(prev); next.add(i); return next })
     const progress = JSON.parse(localStorage.getItem('faro_progress') ?? '{}')
     localStorage.setItem('faro_progress', JSON.stringify({ ...progress, [`block${i}_completed`]: true }))
   }
