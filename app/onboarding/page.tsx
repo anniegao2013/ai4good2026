@@ -7,6 +7,7 @@ import { PillButton } from '@/components/PillButton'
 import { QuestionCard } from '@/components/QuestionCard'
 import { Skyline } from '@/components/Skyline'
 import type { FaroProfile, OnboardingCountry, HomeTool } from '@/lib/types'
+import { CountryGlobe } from '@/components/CountryGlobe'
 
 // ── Option data ──────────────────────────────────────────────────────────────
 
@@ -70,6 +71,11 @@ const URGENCY = [
 ]
 
 const TOTAL = 6
+
+//Country label helper
+const COUNTRY_LABEL_TO_CODE: Record<string, OnboardingCountry> = Object.fromEntries(
+  COUNTRIES.map(c => [c.label.toLowerCase(), c.code])
+) as Record<string, OnboardingCountry>
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -138,7 +144,7 @@ export default function OnboardingPage() {
 
       {/* Questions */}
       <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-10 pb-16">
-        <div className="w-full max-w-xl">
+        <div className="w-full max-w-xl mx-auto flex flex-col items-center">
 
           {/* Q1: Country */}
           {step === 1 && (
@@ -146,7 +152,38 @@ export default function OnboardingPage() {
               question="What country did you grow up in?"
               whyWeAsk="Each country has a distinct financial system. This loads the right comparison map for you."
             >
-              <div className="flex flex-wrap gap-2.5 mb-4">
+              {/* 🌍 3D Globe Selector */}
+              <CountryGlobe
+                onSelect={(code) => {
+                  set('country', code as OnboardingCountry)
+                  setTimeout(advance, 200)
+                }}
+              />
+
+              {/* 🔎 Search (constrained to supported countries only) */}
+              <div className="mt-4">
+                <input
+                  type="text"
+                  placeholder="Search your country..."
+                  value={otherCountry}
+                  onChange={(e) => {
+                    const val = e.target.value.trim().toLowerCase()
+                    setOtherCountry(e.target.value)
+
+                    const match = COUNTRY_LABEL_TO_CODE[val]
+
+                    if (match) {
+                      set('country', match)
+                    } else {
+                      set('country', 'OTHER')
+                    }
+                  }}
+                  className="w-full border border-faro-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-faro-primary"
+                />
+              </div>
+
+              {/* 🟣 Existing pill UI (UNCHANGED behavior) */}
+              <div className="flex flex-wrap gap-2.5 mt-4">
                 {COUNTRIES.map((c) => (
                   <PillButton
                     key={c.code}
@@ -154,6 +191,7 @@ export default function OnboardingPage() {
                     selected={profile.country === c.code}
                     onClick={() => {
                       set('country', c.code as OnboardingCountry)
+
                       if (c.code !== 'OTHER') {
                         setTimeout(advance, 160)
                       }
@@ -161,6 +199,8 @@ export default function OnboardingPage() {
                   />
                 ))}
               </div>
+
+              {/* 🧭 OTHER fallback (UNCHANGED behavior) */}
               {profile.country === 'OTHER' && (
                 <div className="mt-3">
                   <input
@@ -170,6 +210,7 @@ export default function OnboardingPage() {
                     onChange={(e) => setOtherCountry(e.target.value)}
                     className="w-full border border-faro-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-faro-primary"
                   />
+
                   <button
                     onClick={advance}
                     disabled={!otherCountry.trim()}

@@ -12,7 +12,9 @@
     "@aws-sdk/client-bedrock-runtime": "^3.1029.0",
     "next": "14.2.35",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-globe.gl": "^2.37.1",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@types/node": "^20",
