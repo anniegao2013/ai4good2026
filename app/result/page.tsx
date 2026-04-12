@@ -2,266 +2,248 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import type { FaroResult, ResultBlock, UserSession } from '@/lib/types'
+import { Skyline } from '@/components/Skyline'
+import { TranslationRow } from '@/components/TranslationRow'
+import { BuildingBlock } from '@/components/BuildingBlock'
+import type { FaroResult, FaroProfile, ResultBlock } from '@/lib/types'
 
-const URGENCY_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  week1: { label: 'Do this week', color: 'text-red-400', bg: 'bg-red-400/10 border-red-400/30' },
-  month1: { label: 'Do this month', color: 'text-amber-400', bg: 'bg-amber-400/10 border-amber-400/30' },
-  month3: { label: 'Within 3 months', color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/30' },
-  year1: { label: 'Within a year', color: 'text-blue-400', bg: 'bg-blue-400/10 border-blue-400/30' },
-}
+const BLOCK_STATUS = ['start_here', 'up_next', 'coming_soon'] as const
 
-const COUNTRY_FLAG: Record<string, string> = {
-  MX: '🇲🇽',
-  IN: '🇮🇳',
-  PH: '🇵🇭',
-  NG: '🇳🇬',
-  CA: '🇬🇹',
-}
-
-const COUNTRY_NAME: Record<string, string> = {
-  MX: 'Mexico',
-  IN: 'India',
-  PH: 'Philippines',
-  NG: 'Nigeria',
-  CA: 'Central America',
+const COUNTRY_LABELS: Record<string, string> = {
+  MX: 'Mexico', IN: 'India', PH: 'Philippines', NG: 'Nigeria',
+  GT: 'Guatemala', SV: 'El Salvador', HN: 'Honduras', OTHER: 'your home country',
 }
 
 export default function ResultPage() {
   const [result, setResult] = useState<FaroResult | null>(null)
-  const [session, setSession] = useState<UserSession | null>(null)
-  const [notFound, setNotFound] = useState(false)
+  const [profile, setProfile] = useState<FaroProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [block0Done, setBlock0Done] = useState(false)
 
   useEffect(() => {
-    const rawResult = localStorage.getItem('faro_result')
-    const rawSession = localStorage.getItem('faro_session')
-
-    if (!rawResult || !rawSession) {
-      setNotFound(true)
+    const rawProfile = localStorage.getItem('faro_profile')
+    if (!rawProfile) {
+      setError('no_profile')
+      setLoading(false)
       return
     }
 
-    try {
-      setResult(JSON.parse(rawResult))
-      setSession(JSON.parse(rawSession))
-    } catch {
-      setNotFound(true)
-    }
+    const parsed: FaroProfile = JSON.parse(rawProfile)
+    setProfile(parsed)
+
+    // Check if already completed block 0
+    const progress = JSON.parse(localStorage.getItem('faro_progress') ?? '{}')
+    if (progress.block0_completed) setBlock0Done(true)
+
+    // Call API
+    fetch('/api/parallel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(parsed),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('API error')
+        return r.json()
+      })
+      .then((data: FaroResult) => {
+        setResult(data)
+        // Cache result
+        localStorage.setItem('faro_result', JSON.stringify(data))
+      })
+      .catch(() => {
+        // Try cached result
+        const cached = localStorage.getItem('faro_result')
+        if (cached) setResult(JSON.parse(cached))
+        else setError('api_failed')
+      })
+      .finally(() => setLoading(false))
   }, [])
 
-  if (notFound) {
+  function markBlock0Done() {
+    const progress = JSON.parse(localStorage.getItem('faro_progress') ?? '{}')
+    localStorage.setItem('faro_progress', JSON.stringify({ ...progress, block0_completed: true }))
+    setBlock0Done(true)
+  }
+
+  // ── Error states ────────────────────────────────────────────────────────
+  if (error === 'no_profile') {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center gap-6 px-6">
-        <p className="text-slate-400 text-lg">No results found. Please complete the onboarding first.</p>
-        <Link href="/onboarding" className="bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-xl hover:bg-amber-300 transition-colors">
-          Start over
+      <Centered>
+        <p className="text-text-secondary mb-5">No profile found. Please complete the onboarding first.</p>
+        <Link href="/onboarding" className="bg-faro-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-faro-dark transition-colors">
+          Start onboarding
         </Link>
-      </main>
+      </Centered>
     )
   }
 
-  if (!result || !session) {
+  if (error === 'api_failed') {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-4 border-t-amber-400 border-slate-700 animate-spin" />
+      <Centered>
+        <p className="text-text-secondary mb-5">Couldn&apos;t load your results. Please try again.</p>
+        <button onClick={() => window.location.reload()} className="bg-faro-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-faro-dark transition-colors">
+          Retry
+        </button>
+      </Centered>
+    )
+  }
+
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (loading || !result || !profile) {
+    return (
+      <main className="relative min-h-screen bg-white flex flex-col">
+        <Skyline />
+        <NavBar />
+        <div className="relative z-10 max-w-2xl mx-auto w-full px-6 py-10 space-y-4">
+          <SkeletonCard h="h-28" />
+          <SkeletonCard h="h-16" />
+          <SkeletonCard h="h-16" />
+          <SkeletonCard h="h-40" />
+        </div>
       </main>
     )
   }
 
-  const flag = COUNTRY_FLAG[session.country] ?? ''
-  const countryName = COUNTRY_NAME[session.country] ?? session.country
+  const countryLabel = COUNTRY_LABELS[profile.country] ?? profile.country
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col">
-      {/* Nav */}
-      <nav className="px-6 py-4 flex items-center justify-between border-b border-slate-800">
-        <span className="text-xl font-bold text-amber-400">Faro</span>
-        <Link
-          href="/onboarding"
-          className="text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          Start over
-        </Link>
-      </nav>
+    <main className="relative min-h-screen bg-white flex flex-col">
+      <Skyline />
 
-      <div className="flex-1 max-w-2xl mx-auto w-full px-6 py-10 space-y-8">
-        {/* Header */}
-        <div>
-          <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
-            <span>{flag}</span>
-            <span>{countryName} → United States</span>
+      <NavBar />
+
+      <div className="relative z-10 max-w-2xl mx-auto w-full px-6 py-10 space-y-10">
+
+        {/* ── Section A: Translation card ─────────────────────────────────── */}
+        <section>
+          {/* AI Portrait */}
+          <div className="border-l-4 border-faro-primary bg-faro-surface rounded-r-2xl px-6 py-5 mb-7">
+            <p className="text-text-primary text-lg leading-relaxed">{result.portrait}</p>
             {result.fallback && (
-              <span className="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full ml-2">
-                Graph-only mode
-              </span>
+              <p className="mt-2 text-xs text-text-secondary italic">
+                (AI unavailable — using verified knowledge graph only)
+              </p>
             )}
           </div>
-          <h1 className="text-3xl font-bold mb-2">Your Financial Map</h1>
-        </div>
 
-        {/* Portrait card */}
-        <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0 mt-0.5">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
+          {/* Translation map */}
+          {result.concepts && result.concepts.length > 0 && (
+            <div className="bg-white border border-faro-border rounded-2xl px-5 py-1">
+              <div className="py-3 border-b border-faro-border">
+                <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                  {countryLabel} → United States
+                </span>
+              </div>
+              {result.concepts.map((c, i) => (
+                <TranslationRow
+                  key={c.id ?? i}
+                  homeConcept={c.homeConcept}
+                  usEquivalent={c.usEquivalent}
+                  category={c.category}
+                  keyDifference={c.keyDifference}
+                />
+              ))}
             </div>
-            <p className="text-slate-200 leading-relaxed">{result.portrait}</p>
-          </div>
-        </div>
+          )}
+        </section>
 
-        {/* Translation blocks */}
-        <div>
-          <h2 className="text-lg font-semibold text-slate-300 mb-4">Your action roadmap</h2>
-          <div className="space-y-4">
-            {result.blocks.map((block, i) => (
-              <TranslationCard key={i} block={block} index={i} />
-            ))}
-          </div>
-        </div>
+        {/* ── Section B: Your 3 priorities ────────────────────────────────── */}
+        {result.blocks && result.blocks.length > 0 && (
+          <section>
+            <h2 className="text-xl font-semibold text-text-primary mb-4">Your 3 priorities</h2>
+            <div className="space-y-3">
+              {result.blocks.map((block: ResultBlock, i: number) => (
+                <BuildingBlock
+                  key={i}
+                  title={block.title}
+                  explanation={block.explanation}
+                  status={BLOCK_STATUS[i] ?? 'coming_soon'}
+                  locked={i > 0}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Cross-country insight */}
-        <CrossCountryInsight country={session.country} tools={session.tools} />
+        {/* ── Section C: First block expanded ─────────────────────────────── */}
+        {result.blocks && result.blocks[0] && (
+          <section>
+            <h2 className="text-xl font-semibold text-text-primary mb-4">
+              Let&apos;s start here
+            </h2>
+            <BuildingBlock
+              title={result.blocks[0].title}
+              explanation={result.blocks[0].explanation}
+              status="start_here"
+              expanded
+              keyDifference={result.blocks[0].keyDifference}
+              action={result.blocks[0].action}
+              actionUrl={result.blocks[0].actionUrl}
+              onComplete={markBlock0Done}
+              completed={block0Done}
+            />
+          </section>
+        )}
 
-        {/* CTA */}
-        <div className="bg-slate-800/40 border border-slate-700 rounded-2xl p-6 text-center">
-          <p className="text-slate-300 mb-4">
-            Financial literacy is a journey. Share Faro with someone who just arrived.
+        {/* ── Footer CTA ────────────────────────────────────────────────── */}
+        <div className="text-center pb-8">
+          <p className="text-sm text-text-secondary mb-4">
+            Know someone who just arrived? Share Faro with them.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <button
               onClick={() => {
                 if (navigator.share) {
-                  navigator.share({ title: 'Faro – Financial Map for Immigrants', url: window.location.origin })
+                  navigator.share({ title: 'Faro — Your finances, translated.', url: window.location.origin })
                 } else {
                   navigator.clipboard.writeText(window.location.origin)
-                  alert('Link copied to clipboard!')
+                  alert('Link copied!')
                 }
               }}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-6 py-3 rounded-xl transition-colors"
+              className="bg-faro-primary hover:bg-faro-dark text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
             >
               Share Faro
             </button>
             <Link
               href="/onboarding"
-              className="border border-slate-600 hover:border-slate-400 text-slate-300 px-6 py-3 rounded-xl transition-colors"
+              className="border border-faro-border hover:border-faro-primary text-text-secondary hover:text-faro-primary px-5 py-2.5 rounded-xl text-sm transition-colors"
             >
-              Redo for someone else
+              Start over
             </Link>
           </div>
+          <p className="mt-8 text-xs text-text-secondary max-w-sm mx-auto">
+            Faro provides general financial education, not personalized financial advice.
+            Always consult a licensed financial professional for decisions specific to your situation.
+          </p>
         </div>
 
-        {/* Disclaimer */}
-        <p className="text-slate-600 text-xs text-center pb-4">
-          Faro provides general financial education, not personalized financial advice.
-          Always consult a licensed financial professional for decisions specific to your situation.
-        </p>
       </div>
     </main>
   )
 }
 
-function TranslationCard({ block, index }: { block: ResultBlock; index: number }) {
-  const urgency = URGENCY_LABELS[block.urgency] ?? URGENCY_LABELS['month1']
-  const [home, us] = block.title.split('→').map((s) => s.trim())
+// ── Small helpers ────────────────────────────────────────────────────────────
 
+function NavBar() {
   return (
-    <div className="bg-slate-800/60 border border-slate-700 rounded-2xl overflow-hidden">
-      {/* Card header */}
-      <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-slate-400 text-sm font-mono shrink-0">#{index + 1}</span>
-          {home && us ? (
-            <div className="flex items-center gap-2 min-w-0 flex-wrap">
-              <span className="font-semibold text-white">{home}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              <span className="font-semibold text-amber-400">{us}</span>
-            </div>
-          ) : (
-            <span className="font-semibold text-white">{block.title}</span>
-          )}
-        </div>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${urgency.bg} ${urgency.color}`}>
-          {urgency.label}
-        </span>
-      </div>
-
-      {/* Card body */}
-      <div className="px-5 py-4 space-y-4">
-        <p className="text-slate-300 text-sm leading-relaxed">{block.explanation}</p>
-
-        {/* Key difference */}
-        <div className="flex gap-2.5 bg-amber-400/5 border border-amber-400/20 rounded-xl px-4 py-3">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          <p className="text-amber-300 text-sm">{block.keyDifference}</p>
-        </div>
-
-        {/* Action */}
-        <div className="flex gap-2.5">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-400 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-          <div>
-            <span className="text-slate-400 text-xs uppercase tracking-wider">Action: </span>
-            {block.actionUrl ? (
-              <a
-                href={block.actionUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-400 text-sm hover:underline"
-              >
-                {block.action}
-              </a>
-            ) : (
-              <span className="text-green-300 text-sm">{block.action}</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    <nav className="relative z-10 px-6 py-4 border-b border-faro-border flex items-center justify-between">
+      <span className="text-lg font-bold text-faro-primary">Faro</span>
+      <Link href="/onboarding" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+        Start over
+      </Link>
+    </nav>
   )
 }
 
-function CrossCountryInsight({ country, tools }: { country: string; tools: string[] }) {
-  const hasSavingsGroup = tools.includes('savings')
-  if (!hasSavingsGroup) return null
+function SkeletonCard({ h }: { h: string }) {
+  return <div className={`skeleton rounded-2xl w-full ${h}`} />
+}
 
-  const GROUP_NAMES: Record<string, string> = {
-    MX: 'tanda',
-    IN: 'chit fund',
-    PH: 'paluwagan',
-    NG: 'esusu',
-    CA: 'tanda / cundina',
-  }
-
-  const home = GROUP_NAMES[country]
-  if (!home) return null
-
-  const others = Object.entries(GROUP_NAMES)
-    .filter(([c]) => c !== country)
-    .map(([, name]) => name)
-    .join(', ')
-
+function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-slate-800/40 border border-slate-700 rounded-2xl px-5 py-4">
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-lg bg-blue-400/20 flex items-center justify-center shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-blue-300 mb-1">Cross-community insight</p>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Your <span className="text-white">{home}</span> is the same concept practiced by immigrants from Mexico, India, the Philippines, Nigeria, and Central America — just different names ({others}). In the US, they all map to <span className="text-white">lending circles</span>. Mission Asset Fund runs free credit-building lending circles in most cities.
-          </p>
-        </div>
-      </div>
-    </div>
+    <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center gap-4">
+      {children}
+    </main>
   )
 }

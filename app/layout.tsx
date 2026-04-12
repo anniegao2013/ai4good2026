@@ -1,21 +1,10 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
-
 export const metadata: Metadata = {
-  title: "Faro — Financial literacy for immigrants",
-  description: "Faro maps your home country's financial tools to US equivalents, so you can hit the ground running.",
+  title: "Faro — Your finances, translated.",
+  description:
+    "Faro maps the financial tools you already know — CIBIL scores, tandas, UPI, paluwagan — to their US equivalents, so you can hit the ground running.",
 };
 
 export default function RootLayout({
@@ -25,11 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

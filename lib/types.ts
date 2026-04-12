@@ -1,4 +1,4 @@
-export type Country = 'MX' | 'IN' | 'PH' | 'NG' | 'CA'
+export type NeptuneCountry = 'MX' | 'IN' | 'PH' | 'NG' | 'CA'
 
 export type Similarity = 'equivalent' | 'similar' | 'partial' | 'no_equivalent'
 
@@ -12,9 +12,24 @@ export type Category =
   | 'tax'
   | 'housing'
 
+/** Maps onboarding country codes to Neptune country codes */
+export type OnboardingCountry =
+  | 'MX' | 'IN' | 'PH' | 'NG' | 'GT' | 'SV' | 'HN' | 'OTHER'
+
+/** Maps onboarding tool selections to categories */
+export type HomeTool =
+  | 'bank_account'
+  | 'credit_card'
+  | 'debit_card'
+  | 'loans'
+  | 'investments'
+  | 'rotating_savings'
+  | 'real_estate'
+  | 'cash'
+
 export interface ConceptNode {
   id: string
-  country: Country | string
+  country: NeptuneCountry | string
   homeConcept: string
   homeDescription: string
   usEquivalent: string
@@ -42,14 +57,12 @@ export interface FaroResult {
   fallback?: boolean
 }
 
-export interface OnboardingData {
-  country: Country | string
-  tools: Category[]
-  urgency: string
-  status: string
+/** Saved to localStorage as 'faro_profile' */
+export interface FaroProfile {
+  country: OnboardingCountry
   timeInUS: string
-}
-
-export interface UserSession extends OnboardingData {
-  completedAt: string
+  status: string
+  hasSsn: string
+  tools: HomeTool[]
+  urgency: string
 }

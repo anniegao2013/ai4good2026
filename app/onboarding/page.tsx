@@ -1,329 +1,299 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import type { OnboardingData, Country, Category } from '@/lib/types'
+import { ProgressBar } from '@/components/ProgressBar'
+import { PillButton } from '@/components/PillButton'
+import { QuestionCard } from '@/components/QuestionCard'
+import { Skyline } from '@/components/Skyline'
+import type { FaroProfile, OnboardingCountry, HomeTool } from '@/lib/types'
 
-const COUNTRIES: { code: Country; name: string; flag: string }[] = [
-  { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
-  { code: 'IN', name: 'India', flag: '🇮🇳' },
-  { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
-  { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
-  { code: 'CA', name: 'Central America', flag: '🇬🇹' },
+// ── Option data ──────────────────────────────────────────────────────────────
+
+const COUNTRIES = [
+  { code: 'MX',    label: 'Mexico'       },
+  { code: 'IN',    label: 'India'        },
+  { code: 'PH',    label: 'Philippines'  },
+  { code: 'NG',    label: 'Nigeria'      },
+  { code: 'GT',    label: 'Guatemala'    },
+  { code: 'SV',    label: 'El Salvador'  },
+  { code: 'HN',    label: 'Honduras'     },
+  { code: 'OTHER', label: 'Other'        },
+] as const
+
+const TIME_IN_US = [
+  'Not arrived yet',
+  'Under 1 month',
+  '1–6 months',
+  '6–12 months',
+  '1–3 years',
+  '3+ years',
 ]
 
-const TOOL_OPTIONS: { category: Category; label: string; description: string }[] = [
-  { category: 'banking', label: 'Everyday banking', description: 'Checking accounts, mobile transfers, digital wallets' },
-  { category: 'credit', label: 'Credit & loans', description: 'Credit scores, store credit, personal loans' },
-  { category: 'savings', label: 'Savings groups', description: 'Tandas, chit funds, paluwagan, esusu' },
-  { category: 'remittance', label: 'Sending money home', description: 'Remittances, wire transfers' },
-  { category: 'tax', label: 'Taxes & ID', description: 'Tax IDs, national IDs, employer registration' },
-  { category: 'housing', label: 'Housing & mortgages', description: 'Renting, buying, housing loans' },
+const STATUSES = [
+  'H-1B (work visa)',
+  'F-1 (student)',
+  'Green card / LPR',
+  'O-1 / L-1',
+  'Asylum / refugee',
+  'DACA',
+  'Prefer not to say',
 ]
 
-const URGENCY_OPTIONS = [
-  { value: 'open_bank_account', label: 'Open a US bank account' },
-  { value: 'build_credit', label: 'Build credit from scratch' },
-  { value: 'send_money_home', label: 'Send money home affordably' },
-  { value: 'file_taxes', label: 'File my first US taxes' },
-  { value: 'save_money', label: 'Start saving / investing' },
+const SSN_STATUS = [
+  'Yes',
+  'No — but applied',
+  'No — not eligible',
+  'Not sure',
 ]
 
-const STATUS_OPTIONS = [
-  { value: 'citizen', label: 'US Citizen / Green Card' },
-  { value: 'work_visa', label: 'Work visa (H-1B, L-1, O-1, etc.)' },
-  { value: 'student_visa', label: 'Student visa (F-1, J-1)' },
-  { value: 'refugee', label: 'Refugee / Asylee' },
-  { value: 'undocumented', label: 'Undocumented / DACA' },
-  { value: 'other', label: 'Other / Prefer not to say' },
+const HOME_TOOLS: { code: HomeTool; label: string }[] = [
+  { code: 'bank_account',     label: 'Bank account'                                    },
+  { code: 'credit_card',      label: 'Credit card'                                     },
+  { code: 'debit_card',       label: 'Debit card only'                                 },
+  { code: 'loans',            label: 'Loans (car, home, personal)'                     },
+  { code: 'investments',      label: 'Investments / stocks'                            },
+  { code: 'rotating_savings', label: 'Rotating savings group (chit fund / tanda / susu)' },
+  { code: 'real_estate',      label: 'Real estate'                                     },
+  { code: 'cash',             label: 'Cash only'                                       },
 ]
 
-const TIME_OPTIONS = [
-  { value: 'less_1_month', label: 'Less than 1 month' },
-  { value: '1_6_months', label: '1–6 months' },
-  { value: '6_12_months', label: '6–12 months' },
-  { value: '1_3_years', label: '1–3 years' },
-  { value: 'more_3_years', label: 'More than 3 years' },
+const URGENCY = [
+  'Finding an apartment',
+  'Understanding my paycheck',
+  'Sending money home',
+  'Building credit',
+  'Opening a bank account',
+  'Understanding taxes',
+  'Saving / investing',
+  'Just exploring',
 ]
 
-type Step = 'country' | 'tools' | 'profile' | 'submitting'
+const TOTAL = 6
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [step, setStep] = useState<Step>('country')
-  const [data, setData] = useState<Partial<OnboardingData>>({
-    tools: [],
-  })
-  const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState(1)
+  const [profile, setProfile] = useState<Partial<FaroProfile>>({ tools: [] })
+  const [otherCountry, setOtherCountry] = useState('')
 
-  function selectCountry(country: Country) {
-    setData((d) => ({ ...d, country }))
-    setStep('tools')
+  const advance = useCallback(() => {
+    if (step < TOTAL) setStep((s) => s + 1)
+  }, [step])
+
+  const back = useCallback(() => {
+    if (step > 1) setStep((s) => s - 1)
+  }, [step])
+
+  function set<K extends keyof FaroProfile>(key: K, value: FaroProfile[K]) {
+    setProfile((p) => ({ ...p, [key]: value }))
   }
 
-  function toggleTool(category: Category) {
-    setData((d) => {
-      const tools = d.tools ?? []
-      if (tools.includes(category)) {
-        return { ...d, tools: tools.filter((t) => t !== category) }
+  function toggleTool(code: HomeTool) {
+    setProfile((p) => {
+      const tools = p.tools ?? []
+      return {
+        ...p,
+        tools: tools.includes(code) ? tools.filter((t) => t !== code) : [...tools, code],
       }
-      return { ...d, tools: [...tools, category] }
     })
   }
 
-  async function handleSubmit() {
-    if (!data.urgency || !data.status || !data.timeInUS) return
-
-    setStep('submitting')
-    setError(null)
-
-    const payload: OnboardingData = {
-      country: data.country!,
-      tools: data.tools ?? [],
-      urgency: data.urgency,
-      status: data.status,
-      timeInUS: data.timeInUS,
+  function handleFinish(urgency: string) {
+    const final: FaroProfile = {
+      country:   profile.country ?? 'OTHER',
+      timeInUS:  profile.timeInUS ?? '',
+      status:    profile.status ?? '',
+      hasSsn:    profile.hasSsn ?? '',
+      tools:     profile.tools ?? [],
+      urgency,
     }
-
-    try {
-      const res = await fetch('/api/parallel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) throw new Error('API request failed')
-
-      const result = await res.json()
-
-      // Save to localStorage
-      localStorage.setItem('faro_session', JSON.stringify({ ...payload, completedAt: new Date().toISOString() }))
-      localStorage.setItem('faro_result', JSON.stringify(result))
-
-      router.push('/result')
-    } catch {
-      setError('Something went wrong. Please try again.')
-      setStep('profile')
-    }
-  }
-
-  if (step === 'submitting') {
-    return <LoadingScreen />
+    localStorage.setItem('faro_profile', JSON.stringify(final))
+    router.push('/result')
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col">
+    <main className="relative min-h-screen bg-white flex flex-col">
+      <Skyline />
+
       {/* Nav */}
-      <nav className="px-6 py-4 flex items-center border-b border-slate-800">
-        <span className="text-xl font-bold text-amber-400">Faro</span>
+      <nav className="relative z-10 px-6 py-4 border-b border-faro-border flex items-center justify-between">
+        <span className="text-lg font-bold text-faro-primary">Faro</span>
+        {step > 1 && (
+          <button
+            onClick={back}
+            className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            ← Back
+          </button>
+        )}
       </nav>
 
       {/* Progress */}
-      <div className="px-6 pt-6 max-w-xl mx-auto w-full">
-        <ProgressBar step={step} />
+      <div className="relative z-10 px-6 pt-5 pb-0 max-w-xl mx-auto w-full">
+        <ProgressBar current={step} total={TOTAL} />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
+      {/* Questions */}
+      <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-10 pb-16">
         <div className="w-full max-w-xl">
-          {/* Step 1: Country */}
-          {step === 'country' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Where are you from?</h2>
-              <p className="text-slate-400 mb-8">We&apos;ll use this to map your home financial tools to US equivalents.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+          {/* Q1: Country */}
+          {step === 1 && (
+            <QuestionCard
+              question="What country did you grow up in?"
+              whyWeAsk="Each country has a distinct financial system. This loads the right comparison map for you."
+            >
+              <div className="flex flex-wrap gap-2.5 mb-4">
                 {COUNTRIES.map((c) => (
-                  <button
+                  <PillButton
                     key={c.code}
-                    onClick={() => selectCountry(c.code)}
-                    className="flex items-center gap-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-400 rounded-2xl px-5 py-4 transition-all text-left"
-                  >
-                    <span className="text-3xl">{c.flag}</span>
-                    <span className="font-medium text-white">{c.name}</span>
-                  </button>
+                    label={c.label}
+                    selected={profile.country === c.code}
+                    onClick={() => {
+                      set('country', c.code as OnboardingCountry)
+                      if (c.code !== 'OTHER') {
+                        setTimeout(advance, 160)
+                      }
+                    }}
+                  />
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Step 2: Tools */}
-          {step === 'tools' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Which financial areas matter to you?</h2>
-              <p className="text-slate-400 mb-8">Select all that apply. We&apos;ll prioritize your translation map accordingly.</p>
-              <div className="grid grid-cols-1 gap-3 mb-8">
-                {TOOL_OPTIONS.map((t) => {
-                  const selected = data.tools?.includes(t.category)
-                  return (
-                    <button
-                      key={t.category}
-                      onClick={() => toggleTool(t.category)}
-                      className={`flex items-start gap-4 rounded-2xl px-5 py-4 border transition-all text-left ${
-                        selected
-                          ? 'bg-amber-400/10 border-amber-400 text-white'
-                          : 'bg-slate-800 border-slate-700 hover:border-slate-500 text-slate-200'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-md border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                        selected ? 'bg-amber-400 border-amber-400' : 'border-slate-500'
-                      }`}>
-                        {selected && (
-                          <svg className="w-3 h-3 text-slate-950" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium">{t.label}</div>
-                        <div className="text-sm text-slate-400 mt-0.5">{t.description}</div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-              <button
-                onClick={() => setStep('profile')}
-                disabled={!data.tools?.length}
-                className="w-full bg-amber-400 hover:bg-amber-300 disabled:bg-slate-700 disabled:text-slate-500 text-slate-950 font-bold py-4 rounded-2xl transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          )}
-
-          {/* Step 3: Profile */}
-          {step === 'profile' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-2">A bit more about you</h2>
-              <p className="text-slate-400 mb-8">This helps us personalize your financial roadmap.</p>
-
-              <div className="space-y-6 mb-8">
-                {/* Urgency */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
-                    What&apos;s your most urgent financial need right now?
-                  </label>
-                  <div className="grid gap-2">
-                    {URGENCY_OPTIONS.map((o) => (
-                      <label
-                        key={o.value}
-                        className={`flex items-center gap-3 rounded-xl px-4 py-3 border cursor-pointer transition-all ${
-                          data.urgency === o.value
-                            ? 'bg-amber-400/10 border-amber-400 text-white'
-                            : 'bg-slate-800 border-slate-700 hover:border-slate-500 text-slate-200'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="urgency"
-                          value={o.value}
-                          checked={data.urgency === o.value}
-                          onChange={(e) => setData((d) => ({ ...d, urgency: e.target.value }))}
-                          className="sr-only"
-                        />
-                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                          data.urgency === o.value ? 'border-amber-400' : 'border-slate-500'
-                        }`}>
-                          {data.urgency === o.value && (
-                            <div className="w-2 h-2 rounded-full bg-amber-400" />
-                          )}
-                        </div>
-                        <span className="text-sm">{o.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
-                    What&apos;s your immigration status?
-                  </label>
-                  <select
-                    value={data.status ?? ''}
-                    onChange={(e) => setData((d) => ({ ...d, status: e.target.value }))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-amber-400 focus:outline-none"
+              {profile.country === 'OTHER' && (
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    placeholder="Type your country..."
+                    value={otherCountry}
+                    onChange={(e) => setOtherCountry(e.target.value)}
+                    className="w-full border border-faro-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-faro-primary"
+                  />
+                  <button
+                    onClick={advance}
+                    disabled={!otherCountry.trim()}
+                    className="mt-3 w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
                   >
-                    <option value="">Select status...</option>
-                    {STATUS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Time in US */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
-                    How long have you been in the US?
-                  </label>
-                  <select
-                    value={data.timeInUS ?? ''}
-                    onChange={(e) => setData((d) => ({ ...d, timeInUS: e.target.value }))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-amber-400 focus:outline-none"
-                  >
-                    <option value="">Select time...</option>
-                    {TIME_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {error && (
-                <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
-                  {error}
+                    Continue
+                  </button>
                 </div>
               )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep('tools')}
-                  className="px-6 py-4 rounded-2xl border border-slate-700 text-slate-300 hover:border-slate-500 transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={!data.urgency || !data.status || !data.timeInUS}
-                  className="flex-1 bg-amber-400 hover:bg-amber-300 disabled:bg-slate-700 disabled:text-slate-500 text-slate-950 font-bold py-4 rounded-2xl transition-colors"
-                >
-                  Build my financial map
-                </button>
-              </div>
-            </div>
+            </QuestionCard>
           )}
+
+          {/* Q2: Time in US */}
+          {step === 2 && (
+            <QuestionCard
+              question="How long have you been in the United States?"
+              whyWeAsk="This sets which tasks are most urgent for your situation right now."
+            >
+              <div className="flex flex-wrap gap-2.5">
+                {TIME_IN_US.map((t) => (
+                  <PillButton
+                    key={t}
+                    label={t}
+                    selected={profile.timeInUS === t}
+                    onClick={() => {
+                      set('timeInUS', t)
+                      setTimeout(advance, 160)
+                    }}
+                  />
+                ))}
+              </div>
+            </QuestionCard>
+          )}
+
+          {/* Q3: Immigration status */}
+          {step === 3 && (
+            <QuestionCard
+              question="What's your current immigration status?"
+              whyWeAsk="Different statuses unlock different financial products. H-1B can open most accounts immediately. F-1 students have different tax rules."
+            >
+              <div className="flex flex-wrap gap-2.5">
+                {STATUSES.map((s) => (
+                  <PillButton
+                    key={s}
+                    label={s}
+                    selected={profile.status === s}
+                    onClick={() => {
+                      set('status', s)
+                      setTimeout(advance, 160)
+                    }}
+                  />
+                ))}
+              </div>
+            </QuestionCard>
+          )}
+
+          {/* Q4: SSN status */}
+          {step === 4 && (
+            <QuestionCard
+              question="Do you have a Social Security Number (SSN) yet?"
+              whyWeAsk="SSN is the key that unlocks most US financial products. If you don't have one, we'll show you alternatives that work right now."
+            >
+              <div className="flex flex-wrap gap-2.5">
+                {SSN_STATUS.map((s) => (
+                  <PillButton
+                    key={s}
+                    label={s}
+                    selected={profile.hasSsn === s}
+                    onClick={() => {
+                      set('hasSsn', s)
+                      setTimeout(advance, 160)
+                    }}
+                  />
+                ))}
+              </div>
+            </QuestionCard>
+          )}
+
+          {/* Q5: Financial tools back home */}
+          {step === 5 && (
+            <QuestionCard
+              question="Back home, which of these did you use? (select all that apply)"
+              whyWeAsk="Each one maps directly to a US equivalent. If you had a credit card back home, you already understand the concept — we just need to show you how scoring works differently here."
+            >
+              <div className="flex flex-wrap gap-2.5 mb-6">
+                {HOME_TOOLS.map((t) => (
+                  <PillButton
+                    key={t.code}
+                    label={t.label}
+                    selected={(profile.tools ?? []).includes(t.code)}
+                    onClick={() => toggleTool(t.code)}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={advance}
+                disabled={(profile.tools ?? []).length === 0}
+                className="w-full bg-faro-primary hover:bg-faro-dark disabled:opacity-40 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
+              >
+                Continue →
+              </button>
+            </QuestionCard>
+          )}
+
+          {/* Q6: Urgent need */}
+          {step === 6 && (
+            <QuestionCard
+              question="What are you most worried about right now?"
+              whyWeAsk="This re-orders your personal roadmap so the most urgent thing comes first."
+            >
+              <div className="flex flex-wrap gap-2.5">
+                {URGENCY.map((u) => (
+                  <PillButton
+                    key={u}
+                    label={u}
+                    selected={false}
+                    onClick={() => handleFinish(u)}
+                  />
+                ))}
+              </div>
+            </QuestionCard>
+          )}
+
         </div>
-      </div>
-    </main>
-  )
-}
-
-function ProgressBar({ step }: { step: Step }) {
-  const steps: Step[] = ['country', 'tools', 'profile']
-  const current = steps.indexOf(step)
-  return (
-    <div className="flex gap-2 mb-2">
-      {steps.map((s, i) => (
-        <div
-          key={s}
-          className={`h-1.5 flex-1 rounded-full transition-colors ${
-            i <= current ? 'bg-amber-400' : 'bg-slate-700'
-          }`}
-        />
-      ))}
-    </div>
-  )
-}
-
-function LoadingScreen() {
-  return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center gap-6">
-      <div className="relative w-16 h-16">
-        <div className="absolute inset-0 rounded-full border-4 border-slate-700" />
-        <div className="absolute inset-0 rounded-full border-4 border-t-amber-400 animate-spin" />
-      </div>
-      <div className="text-center">
-        <p className="text-xl font-semibold mb-2">Building your financial map...</p>
-        <p className="text-slate-400 text-sm">Querying our knowledge graph and generating your personalized plan</p>
       </div>
     </main>
   )
