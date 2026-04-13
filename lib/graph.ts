@@ -62,12 +62,12 @@ export function toolsToCategories(tools: string[]): Category[] {
 export const TOOL_LABELS: Record<HomeTool | string, string> = {
   bank_account:     'Bank account',
   credit_card:      'Credit card',
-  debit_card:       'Debit card only',
+  debit_card:       'Debit card',
   loans:            'Loans (car, home, personal)',
   investments:      'Investments / stocks',
   rotating_savings: 'Rotating savings group (chit fund / tanda / susu)',
   real_estate:      'Real estate',
-  cash:             'Cash only',
+  cash:             'Cash',
 }
 
 /**

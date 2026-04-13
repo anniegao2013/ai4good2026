@@ -56,12 +56,12 @@ const SSN_STATUS = [
 const HOME_TOOLS: { code: HomeTool; label: string }[] = [
   { code: 'bank_account',     label: 'Bank account'                                    },
   { code: 'credit_card',      label: 'Credit card'                                     },
-  { code: 'debit_card',       label: 'Debit card only'                                 },
+  { code: 'debit_card',       label: 'Debit card'                                 },
   { code: 'loans',            label: 'Loans (car, home, personal)'                     },
   { code: 'investments',      label: 'Investments / stocks'                            },
   { code: 'rotating_savings', label: 'Rotating savings group (chit fund / tanda / susu)' },
   { code: 'real_estate',      label: 'Real estate'                                     },
-  { code: 'cash',             label: 'Cash only'                                       },
+  { code: 'cash',             label: 'Cash'                                       },
 ]
 
 const URGENCY = [
