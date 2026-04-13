@@ -48,8 +48,8 @@ const STATUSES = [
 
 const SSN_STATUS = [
   'Yes',
-  'No — but applied',
-  'No — not eligible',
+  'No, but applied',
+  'No, not eligible',
   'Not sure',
 ]
 
