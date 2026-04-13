@@ -32,10 +32,10 @@ export const roadmapNodes: RoadmapNode[] = [
     id: 'bank-account',
     title: 'Open a US bank account',
     description: 'Your first financial home in the US. Most banks accept a passport + ITIN or SSN.',
-    details: 'Credit unions are often more immigrant-friendly than big banks — lower fees, fewer requirements. Bring your passport and any visa documents. Online banks like Chime or SoFi have no minimum balance requirements.',
+    details: 'Credit unions are often more immigrant-friendly than big banks: lower fees, fewer requirements. Bring your passport and any visa documents. Online banks like Chime or SoFi have no minimum balance requirements.',
     tips: [
       'Credit unions rarely require an SSN to open an account',
-      'Ask your employer if they have a partner bank — some offer fee waivers',
+      'Ask your employer if they have a partner bank, some offer fee waivers',
       'Avoid banks with monthly fees above $5',
     ],
     track: 'banking',

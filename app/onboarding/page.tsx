@@ -234,7 +234,7 @@ export default function OnboardingPage() {
             {step === 2 && (
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-text-primary leading-tight mb-3 text-balance">
-                  What country did you grow up in?
+                  What country did are you coming from?
                 </h1>
                 <p className="text-text-secondary mb-8 text-base">
                   Each country has a distinct financial system. This loads the right comparison map for you.

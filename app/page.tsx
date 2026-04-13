@@ -50,7 +50,7 @@ export default function HomePage() {
 
             <p className="text-lg md:text-xl text-text-secondary leading-relaxed mb-10 max-w-xl">
               You already know how money works where you&rsquo;re from.
-              We&rsquo;ll show you how it works here — step by step.
+              We&rsquo;ll show you how it works here, step by step.
             </p>
           </motion.div>
 
@@ -76,7 +76,7 @@ export default function HomePage() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex items-center flex-wrap gap-4 text-sm text-text-secondary"
           >
-            <span className="flex items-center gap-1.5">✨ Free forever</span>
+            <span className="flex items-center gap-1.5">Free forever</span>
             <span className="w-1 h-1 rounded-full bg-faro-border" />
             <span>No account needed</span>
             <span className="w-1 h-1 rounded-full bg-faro-border" />
